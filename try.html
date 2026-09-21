@@ -87,24 +87,34 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 <script>
 const $=id=>document.getElementById(id);
 const KEY="sw_gemini_key", HIST="sw_hist_v5";
+const MODELS=["gemini-3.6-flash","gemini-3.5-flash","gemini-flash-latest"];
 const state={current:null,history:loadHist()};
 function loadHist(){try{return JSON.parse(localStorage.getItem(HIST)||"[]")}catch(e){return[]}}
 function saveHist(){try{localStorage.setItem(HIST,JSON.stringify(state.history.slice(0,16).map(h=>Object.assign({},h,{image:(h.image||"").slice(0,80000)}))))}catch(e){}}
 function getKey(){return (localStorage.getItem(KEY)||"").trim()}
-function banner(){$("keyBanner").textContent=getKey()?"Thrift AI is on.":"Tap AI key and paste a free Gemini key or it cannot recognize the item."}
+function banner(){$("keyBanner").textContent=getKey()?"Thrift AI is on (Gemini 3.6 Flash).":"Tap AI key and paste a free Gemini key or it cannot recognize the item."}
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.go===id||((id==="result"||id==="settings")&&b.dataset.go==="home")));if(id==="history")renderHist();if(id==="settings")$("apiKey").value=getKey()}
 function q(s){return encodeURIComponent(s||"")}
 function compress(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{try{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;const s=Math.min(1,1024/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",0.8))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read photo"))};img.src=url})}
 function parseJson(text){const clean=(text||"").replace(/```json/gi,"").replace(/```/g,"").trim();return JSON.parse(clean.slice(clean.indexOf("{"),clean.lastIndexOf("}")+1))}
+async function callModel(model,key,prompt,b64){
+  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt},{inline_data:{mime_type:"image/jpeg",data:b64}}]}],generationConfig:{temperature:0.2}})});
+  const data=await res.json();
+  return {ok:res.ok,data};
+}
 async function askGemini(dataUrl){
   const key=getKey(); if(!key) throw new Error("Add a Gemini API key first (AI key).");
   const prompt="You are a US thrift-store buyer. Identify the object in the photo. Price USED Facebook Marketplace/eBay resale, not retail. Return ONLY JSON with keys name,brand,model,category,condition,era,resaleLow,resaleHigh,floor,confidence,notes,searchQuery,listingTitle,listingBody. notes is an array of short reasons. confidence is low, medium, or high. Be specific if a logo is visible. A wired Logitech office mouse is typically $6-15 used, not $50.";
-  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt},{inline_data:{mime_type:"image/jpeg",data:dataUrl.split(",")[1]}}]}],generationConfig:{temperature:0.2}})});
-  const data=await res.json();
-  if(!res.ok) throw new Error((data.error&&data.error.message)||("Gemini error "+res.status));
-  const text=((((data.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||"").join("\n");
-  if(!text) throw new Error("Gemini returned no text.");
-  return parseJson(text);
+  const b64=dataUrl.split(",")[1];
+  let last="Gemini error";
+  for (const model of MODELS){
+    const {ok,data}=await callModel(model,key,prompt,b64);
+    if(!ok){ last=(data.error&&data.error.message)||("Gemini error on "+model); continue; }
+    const text=((((data.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||"").join("\n");
+    if(!text){ last="Gemini returned no text from "+model; continue; }
+    return parseJson(text);
+  }
+  throw new Error(last);
 }
 function paint(item){
   $("img").src=item.image||""; $("pname").textContent=item.name||"Item";
