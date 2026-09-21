@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>SnapWorth 3.6</title>
+<title>SnapWorth</title>
 <style>
 :root{--bg:#0f1410;--card:#1d261f;--ink:#f4efe4;--muted:#b7c0b4;--gold:#d4b36a;--gold2:#f0d59a;--line:rgba(244,239,228,.12)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,sans-serif}
@@ -15,14 +15,17 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 .screen{display:none}.screen.on{display:block}
 .take{width:100%;border:0;background:linear-gradient(180deg,#f3d48e,#c99a45);color:#1a1408;border-radius:20px;padding:20px;font-weight:800;font-size:18px}
 .ghost{width:100%;margin-top:10px;border:1px dashed var(--line);background:#171e18;color:var(--ink);border-radius:16px;padding:14px}
-.err{color:#e07a6a;white-space:pre-wrap}.ok{color:#8fdb8a}.muted{color:var(--muted);font-size:13px;line-height:1.4}
+.err{color:#e07a6a;white-space:pre-wrap}.muted{color:var(--muted);font-size:13px;line-height:1.4}
 .thumb{width:100%;height:220px;object-fit:cover;border-radius:16px;background:#111}
-.title{font-size:24px;margin:12px 0 4px}.price{font-size:30px;color:var(--gold2);font-weight:700}
+.title{font-size:22px;margin:12px 0 4px}.price{font-size:30px;color:var(--gold2);font-weight:700}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
 .row{display:flex;gap:8px}.btn{flex:1;border:0;border-radius:14px;padding:13px;font-weight:700}
 .btn.go{background:var(--gold);color:#1a1408}.btn.no{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meta div{background:#171e18;border-radius:12px;padding:10px}
 .meta span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chips button{border:1px solid var(--line);background:#171e18;color:var(--ink);border-radius:999px;padding:8px 12px}
+.chips button.on{background:rgba(212,179,106,.2);color:var(--gold2)}
 .comp a{color:var(--gold2);display:block;padding:8px 0;text-decoration:none;border-bottom:1px solid var(--line)}
 .hist{display:flex;gap:10px;align-items:center}.hist img{width:56px;height:56px;object-fit:cover;border-radius:10px}
 .nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(480px,calc(100% - 24px));display:grid;grid-template-columns:repeat(3,1fr);background:#171e18;border:1px solid var(--line);border-radius:16px;padding:6px}
@@ -33,11 +36,11 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 </style></head><body>
 <div class="app">
 <header>
-<div class="brand"><div class="logo">SW</div><div><h1>SnapWorth</h1><p class="sub">Gemini 3.6</p></div></div>
+<div class="brand"><div class="logo">SW</div><div><h1>SnapWorth</h1><p class="sub">Instant + Gemini</p></div></div>
 <button class="gear" data-go="settings" type="button">AI key</button>
 </header>
 <section id="home" class="screen on">
-<p class="muted">Photo goes to Gemini. Wait on the result screen until a price appears (often 10–20 seconds).</p>
+<p class="muted">You get a price immediately. Tap what it is if the first guess is wrong. Gemini upgrades the ID if your key works.</p>
 <div class="banner" id="keyBanner"></div>
 <button class="take" id="takeBtn" type="button">TAKE PHOTO</button>
 <button class="ghost" id="upBtn" type="button">Upload from camera roll</button>
@@ -46,16 +49,19 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 </section>
 <section id="result" class="screen">
 <img class="thumb" id="img" alt=""/>
-<p class="muted" id="aiLine">Asking Gemini…</p>
+<p class="muted" id="aiLine"></p>
 <p class="err" id="err"></p>
-<h2 class="title" id="pname">Identifying…</h2>
-<div class="price" id="price">…</div>
+<h2 class="title" id="pname"></h2>
+<div class="price" id="price"></div>
 <p class="muted" id="advice"></p>
+<div class="card"><strong>Tap what it is</strong><div class="chips" id="chips"></div>
+<input id="typed" placeholder="or type: Logitech mouse / Wantek headphones"/>
+<button class="ghost" id="reprice" type="button">Update from name</button></div>
 <div class="meta">
-<div><span>Brand / model</span><strong id="brand">…</strong></div>
-<div><span>Condition</span><strong id="cond">…</strong></div>
-<div><span>Category</span><strong id="cat">…</strong></div>
-<div><span>Confidence</span><strong id="conf">…</strong></div>
+<div><span>Brand / model</span><strong id="brand"></strong></div>
+<div><span>Condition</span><strong id="cond"></strong></div>
+<div><span>Category</span><strong id="cat"></strong></div>
+<div><span>Source</span><strong id="conf"></strong></div>
 </div>
 <div class="card"><strong>Why this price</strong><ul id="notes" class="muted"></ul></div>
 <div class="card comp"><strong>Compare live listings</strong>
@@ -66,16 +72,16 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 <div class="row"><button class="btn no" data-go="home" type="button">Scan another</button><button class="btn go" data-go="sell" type="button">Sell It</button></div>
 </section>
 <section id="sell" class="screen">
-<div class="card"><strong>Listing title</strong><input id="ltitle"/><strong>Description</strong><textarea id="lbody" rows="9"></textarea></div>
+<div class="card"><strong>Listing title</strong><input id="ltitle"/><strong>Description</strong><textarea id="lbody" rows="8"></textarea></div>
 <div class="row"><button class="btn no" id="copyBtn" type="button">Copy</button><button class="btn go" id="shareBtn" type="button">Share</button></div>
 </section>
 <section id="history" class="screen"><h2 class="title">History</h2><div id="hist"></div></section>
 <section id="settings" class="screen">
-<h2 class="title">Thrift AI key</h2>
-<p class="muted">Gemini key from AI Studio. Stays on this phone.</p>
+<h2 class="title">Gemini key (optional)</h2>
+<p class="muted">App works without it. Key improves brand/model ID.</p>
 <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off"/>
 <button class="take" id="saveKey" type="button" style="margin-top:12px">Save key</button>
-<p class="ok" id="saved"></p>
+<p class="muted" id="saved"></p>
 </section>
 </div>
 <nav class="nav">
@@ -85,80 +91,100 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 </nav>
 <script>
 const $=id=>document.getElementById(id);
-const KEY="sw_gemini_key", HIST="sw_hist_v5";
-const MODELS=["gemini-3.6-flash","gemini-3.5-flash","gemini-3.8-flash"];
+const KEY="sw_gemini_key", HIST="sw_hist_v6";
+const CATS=[
+ {id:"mouse",keys:["mouse","logitech","logi","m500","m100","m185"],name:"Computer mouse",brand:"Logitech / Logi / generic",low:6,high:15,floor:5,cat:"Electronics",notes:["Wired office / Logi mice usually $5-12 used.","Wireless needs the dongle."],q:"Logitech wired mouse used"},
+ {id:"headphones",keys:["headphone","headset","wantek","sony","bose","beats","ear"],name:"Headphones",brand:"Check headband logo",low:8,high:25,floor:6,cat:"Audio",notes:["Budget Amazon brands like Wantek used are about $8-20.","Padding wear drops price."],q:"Wantek headphones used"},
+ {id:"tool",keys:["drill","wrench","saw","dewalt","craftsman","tool"],name:"Hand or power tool",brand:"Read the stamp",low:15,high:55,floor:10,cat:"Tools",notes:["Brand and battery pack set the price."],q:"used power tool"},
+ {id:"phone",keys:["iphone","samsung","pixel","phone"],name:"Smartphone",brand:"Model + storage",low:40,high:280,floor:25,cat:"Phones",notes:["iCloud/FRP lock kills value."],q:"used smartphone"},
+ {id:"furniture",keys:["chair","table","desk","dresser","sofa"],name:"Furniture",brand:"Local pickup only",low:25,high:150,floor:20,cat:"Furniture",notes:["Do not use this category for a computer mouse."],q:"used furniture local"},
+ {id:"item",keys:[],name:"Household item",brand:"Unknown",low:8,high:30,floor:5,cat:"General",notes:["Tap a category. Do not leave this generic."],q:"used item"}
+];
 const state={current:null,history:(()=>{try{return JSON.parse(localStorage.getItem(HIST)||"[]")}catch(e){return[]}})()};
-function saveHist(){try{localStorage.setItem(HIST,JSON.stringify(state.history.slice(0,16).map(h=>Object.assign({},h,{image:(h.image||"").slice(0,80000)}))))}catch(e){}}
+function saveHist(){try{localStorage.setItem(HIST,JSON.stringify(state.history.slice(0,16).map(h=>Object.assign({},h,{image:(h.image||"").slice(0,70000)}))))}catch(e){}}
 function getKey(){return (localStorage.getItem(KEY)||"").trim()}
-function banner(){$("keyBanner").textContent=getKey()?"Key saved. After you snap, wait on this next screen.":"Tap AI key and paste your Gemini key first."}
+function banner(){$("keyBanner").textContent=getKey()?"Gemini key saved. Instant estimate still shows first.":"Works now without a key. Add Gemini later for brand reading."}
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.go===id||((id==="result"||id==="settings")&&b.dataset.go==="home")));if(id==="history")renderHist();if(id==="settings")$("apiKey").value=getKey()}
 function q(s){return encodeURIComponent(s||"")}
-function compress(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{try{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;const s=Math.min(1,768/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",0.7))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read photo"))};img.src=url})}
-function parseJson(text){const clean=(text||"").replace(/```json/gi,"").replace(/```/g,"").trim();const start=clean.indexOf("{"), end=clean.lastIndexOf("}"); if(start<0||end<start) throw new Error("Model did not return JSON"); return JSON.parse(clean.slice(start,end+1))}
-function extractText(data){
-  const parts=((((data.candidates||[])[0]||{}).content||{}).parts)||[];
-  return parts.map(p=>p.text||"").join("\n").trim();
-}
-async function askGemini(dataUrl){
-  const key=getKey(); if(!key) throw new Error("Add a Gemini API key first (AI key).");
-  const prompt="You are a US thrift-store buyer looking at a photo. Identify the exact item. Price USED Facebook Marketplace and eBay resale, not retail. Return ONLY JSON with keys name,brand,model,category,condition,era,resaleLow,resaleHigh,floor,confidence,notes,searchQuery,listingTitle,listingBody. notes must be an array of short strings. A wired Logitech office mouse is typically $6-15 used. Never call a computer mouse furniture.";
-  const b64=dataUrl.split(",")[1];
-  let last="Gemini error";
-  for (const model of MODELS){
-    $("aiLine").textContent="Calling "+model+"…";
-    const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-goog-api-key":key},
-      body:JSON.stringify({
-        contents:[{role:"user",parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:prompt}]}],
-        generationConfig:{temperature:0.2,responseMimeType:"application/json"}
-      })
-    });
-    const data=await res.json();
-    if(!res.ok){ last=(data.error&&data.error.message)||(model+" HTTP "+res.status); continue; }
-    const text=extractText(data);
-    if(!text){ last=model+" returned no text (finish="+((((data.candidates||[])[0]||{}).finishReason)||"?")+")"; continue; }
-    return parseJson(text);
-  }
-  throw new Error(last);
+function matchCat(text){const t=(text||"").toLowerCase();return CATS.find(c=>c.id!=="item"&&c.keys.some(k=>t.includes(k)))||CATS.find(c=>c.id==="item")}
+function fromCat(cat, extra){
+  const name=extra||cat.name;
+  return {name, brand:cat.brand, model:"", category:cat.cat, condition:"Used", resaleLow:cat.low, resaleHigh:cat.high, floor:cat.floor, confidence: extra?"typed":"tap a chip if wrong", notes:cat.notes.slice(), searchQuery: extra||cat.q, listingTitle:name+" — used", listingBody:name+"\nUsed.\nAsk $"+cat.low+"–$"+cat.high+".\nLocal pickup."};
 }
 function paint(item){
-  $("img").src=item.image||""; $("pname").textContent=item.name||"Item";
+  state.current=item;
+  $("img").src=item.image||"";
+  $("pname").textContent=item.name;
   $("price").textContent="$"+item.resaleLow+"\u2013$"+item.resaleHigh;
   $("advice").textContent="Do not list under $"+item.floor+" without sold comps.";
   $("brand").textContent=[item.brand,item.model].filter(Boolean).join(" ")||"-";
-  $("cond").textContent=item.condition||"Used"; $("cat").textContent=item.category||"-"; $("conf").textContent=item.confidence||"-";
+  $("cond").textContent=item.condition||"Used";
+  $("cat").textContent=item.category||"-";
+  $("conf").textContent=item.confidence||"-";
   $("notes").innerHTML=(item.notes||[]).map(n=>"<li>"+n+"</li>").join("");
-  $("ltitle").value=item.listingTitle||item.name; $("lbody").value=item.listingBody||"";
+  $("ltitle").value=item.listingTitle||item.name;
+  $("lbody").value=item.listingBody||"";
   const term=item.searchQuery||item.name;
   $("ebay").href="https://www.ebay.com/sch/i.html?_nkw="+q(term)+"&LH_Sold=1&LH_Complete=1"; $("ebay").textContent="eBay sold: "+term;
   $("shop").href="https://www.google.com/search?tbm=shop&q="+q(term+" used"); $("shop").textContent="Google Shopping: "+term;
   $("fb").href="https://www.facebook.com/marketplace/search/?query="+q(term); $("fb").textContent="Marketplace: "+term;
   $("amz").href="https://www.amazon.com/s?k="+q(term); $("amz").textContent="Amazon: "+term;
+  $("chips").innerHTML=CATS.filter(c=>c.id!=="item").map(c=>'<button type="button" data-id="'+c.id+'">'+c.name+'</button>').join("");
+  $("chips").querySelectorAll("button").forEach(b=>b.onclick=()=>{const cat=CATS.find(c=>c.id===b.dataset.id); const next=Object.assign({id:item.id,image:item.image}, fromCat(cat)); persist(next); paint(next); $("aiLine").textContent="Updated from category tap.";});
 }
 function persist(item){const i=state.history.findIndex(h=>h.id===item.id); if(i>=0) state.history[i]=item; else state.history.unshift(item); saveHist()}
-function renderHist(){if(!state.history.length){$("hist").innerHTML='<p class="muted">No scans yet.</p>';return}$("hist").innerHTML=state.history.map((h,i)=>'<div class="card hist" data-i="'+i+'"><img src="'+(h.image||"")+'" alt=""><div><strong>'+(h.name||"Item")+'</strong><div class="muted">$'+(h.resaleLow||"?")+'\u2013$'+(h.resaleHigh||"?")+'</div></div></div>').join("");$("hist").querySelectorAll(".hist").forEach(el=>el.onclick=()=>{state.current=state.history[+el.dataset.i];paint(state.current);show("result")})}
-async function run(file){
-  $("err").textContent=""; show("result"); $("aiLine").textContent="Compressing photo…"; $("pname").textContent="Identifying…"; $("price").textContent="…";
-  try{
-    const dataUrl=await compress(file); $("img").src=dataUrl;
-    const ai=await askGemini(dataUrl);
-    const item=Object.assign({id:Date.now(),image:dataUrl,resaleLow:0,resaleHigh:0,floor:0,notes:[]},ai);
-    item.resaleLow=Number(item.resaleLow)||0; item.resaleHigh=Number(item.resaleHigh)||item.resaleLow; item.floor=Number(item.floor)||Math.max(1,Math.round(item.resaleLow*0.7));
-    if(!Array.isArray(item.notes)) item.notes=[String(item.notes||"")];
-    state.current=item; persist(item); paint(item); $("aiLine").textContent="Thrift AI result";
-  }catch(e){
-    $("err").textContent=e.message||String(e);
-    $("aiLine").textContent="AI failed — see the red text";
-    $("pname").textContent="Could not finish";
+function renderHist(){if(!state.history.length){$("hist").innerHTML='<p class="muted">No scans yet.</p>';return}$("hist").innerHTML=state.history.map((h,i)=>'<div class="card hist" data-i="'+i+'"><img src="'+(h.image||"")+'" alt=""><div><strong>'+h.name+'</strong><div class="muted">$'+h.resaleLow+'\u2013$'+h.resaleHigh+'</div></div></div>').join("");$("hist").querySelectorAll(".hist").forEach(el=>el.onclick=()=>{paint(state.history[+el.dataset.i]);show("result")})}
+function compress(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{try{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;const s=Math.min(1,768/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",0.7))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read photo"))};img.src=url})}
+async function askGemini(dataUrl){
+  const key=getKey(); if(!key) throw new Error("no-key");
+  const prompt="Identify the object. Price USED US Marketplace/eBay. Return ONLY JSON keys name,brand,model,category,condition,resaleLow,resaleHigh,floor,notes,searchQuery,listingTitle,listingBody. notes=array. Wired Logitech mouse $6-15. Wantek headphones $8-20. Never call a mouse furniture.";
+  const b64=dataUrl.split(",")[1];
+  const models=["gemini-3.6-flash","gemini-3.5-flash"];
+  let last="Gemini failed";
+  for(const model of models){
+    const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{role:"user",parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:prompt}]}],generationConfig:{temperature:0.2,responseMimeType:"application/json"}})});
+    const data=await res.json();
+    if(!res.ok){last=(data.error&&data.error.message)||model+" error"; continue;}
+    const text=(((((data.candidates||[])[0]||{}).content||{}).parts)||[]).map(p=>p.text||"").join("\n");
+    if(!text){last=model+" empty"; continue;}
+    const clean=text.replace(/```json/gi,"").replace(/```/g,"");
+    return JSON.parse(clean.slice(clean.indexOf("{"),clean.lastIndexOf("}")+1));
   }
+  throw new Error(last);
+}
+async function run(file){
+  $("err").textContent=""; show("result"); $("aiLine").textContent="Loading photo…";
+  try{
+    const dataUrl=await compress(file);
+    const guess=Object.assign({id:Date.now(),image:dataUrl}, fromCat(matchCat(file.name)));
+    persist(guess); paint(guess);
+    $("aiLine").textContent="Instant estimate. Tap Computer mouse or Headphones if this is wrong.";
+    if(getKey()){
+      $("aiLine").textContent="Instant estimate shown. Asking Gemini to refine…";
+      try{
+        const ai=await askGemini(dataUrl);
+        const item=Object.assign({id:guess.id,image:dataUrl,resaleLow:0,resaleHigh:0,floor:0,notes:[]},ai);
+        item.resaleLow=Number(item.resaleLow)||guess.resaleLow;
+        item.resaleHigh=Number(item.resaleHigh)||guess.resaleHigh;
+        item.floor=Number(item.floor)||guess.floor;
+        if(!Array.isArray(item.notes)) item.notes=[String(item.notes||"")];
+        item.confidence="Gemini";
+        persist(item); paint(item);
+        $("aiLine").textContent="Gemini refined this ID.";
+      }catch(e){
+        $("err").textContent="Gemini did not finish: "+(e.message||e)+". Use the category buttons. The instant price is still valid.";
+        $("aiLine").textContent="Using instant estimate.";
+      }
+    }
+  }catch(e){$("err").textContent=e.message||String(e);}
   $("cam").value=""; $("lib").value="";
 }
 $("takeBtn").onclick=()=>$("cam").click(); $("upBtn").onclick=()=>$("lib").click();
 $("cam").onchange=e=>e.target.files&&e.target.files[0]&&run(e.target.files[0]);
 $("lib").onchange=e=>e.target.files&&e.target.files[0]&&run(e.target.files[0]);
-$("saveKey").onclick=()=>{const k=$("apiKey").value.trim(); if(!k){$("saved").textContent="Paste a key first.";return;} localStorage.setItem(KEY,k); $("saved").textContent="Saved."; banner();};
-$("copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText($("ltitle").value+"\n\n"+$("lbody").value);$("copyBtn").textContent="Copied"}catch(e){}};
+$("reprice").onclick=()=>{const t=$("typed").value.trim(); if(!t||!state.current) return; const next=Object.assign({id:state.current.id,image:state.current.image}, fromCat(matchCat(t), t)); persist(next); paint(next); $("aiLine").textContent="Updated from typed name.";};
+$("saveKey").onclick=()=>{const k=$("apiKey").value.trim(); if(!k) return; localStorage.setItem(KEY,k); $("saved").textContent="Saved."; banner();};
+$("copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText($("ltitle").value+"\n\n"+$("lbody").value)}catch(e){}};
 $("shareBtn").onclick=async()=>{try{if(navigator.share)await navigator.share({title:$("ltitle").value,text:$("lbody").value})}catch(e){}};
 document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.go)));
 banner();
