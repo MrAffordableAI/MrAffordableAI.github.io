@@ -2,7 +2,6 @@
 <html lang="en"><head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<meta http-equiv="Cache-Control" content="no-store"/>
 <title>SnapWorth 3.6</title>
 <style>
 :root{--bg:#0f1410;--card:#1d261f;--ink:#f4efe4;--muted:#b7c0b4;--gold:#d4b36a;--gold2:#f0d59a;--line:rgba(244,239,228,.12)}
@@ -16,7 +15,7 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 .screen{display:none}.screen.on{display:block}
 .take{width:100%;border:0;background:linear-gradient(180deg,#f3d48e,#c99a45);color:#1a1408;border-radius:20px;padding:20px;font-weight:800;font-size:18px}
 .ghost{width:100%;margin-top:10px;border:1px dashed var(--line);background:#171e18;color:var(--ink);border-radius:16px;padding:14px}
-.err{color:#e07a6a}.ok{color:#8fdb8a}.muted{color:var(--muted);font-size:13px;line-height:1.4}
+.err{color:#e07a6a;white-space:pre-wrap}.ok{color:#8fdb8a}.muted{color:var(--muted);font-size:13px;line-height:1.4}
 .thumb{width:100%;height:220px;object-fit:cover;border-radius:16px;background:#111}
 .title{font-size:24px;margin:12px 0 4px}.price{font-size:30px;color:var(--gold2);font-weight:700}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
@@ -38,25 +37,25 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 <button class="gear" data-go="settings" type="button">AI key</button>
 </header>
 <section id="home" class="screen on">
-<p class="muted">Photograph the item. Gemini names it and prices used resale. A mouse should not come back as furniture.</p>
+<p class="muted">Photo goes to Gemini. Wait on the result screen until a price appears (often 10–20 seconds).</p>
 <div class="banner" id="keyBanner"></div>
 <button class="take" id="takeBtn" type="button">TAKE PHOTO</button>
 <button class="ghost" id="upBtn" type="button">Upload from camera roll</button>
 <input id="cam" class="hidden" type="file" accept="image/*" capture="environment"/>
 <input id="lib" class="hidden" type="file" accept="image/*"/>
-<p class="err" id="err"></p>
 </section>
 <section id="result" class="screen">
 <img class="thumb" id="img" alt=""/>
-<p class="muted" id="aiLine">Asking Gemini 3.6...</p>
-<h2 class="title" id="pname">Item</h2>
-<div class="price" id="price">-</div>
+<p class="muted" id="aiLine">Asking Gemini…</p>
+<p class="err" id="err"></p>
+<h2 class="title" id="pname">Identifying…</h2>
+<div class="price" id="price">…</div>
 <p class="muted" id="advice"></p>
 <div class="meta">
-<div><span>Brand / model</span><strong id="brand">-</strong></div>
-<div><span>Condition</span><strong id="cond">-</strong></div>
-<div><span>Category</span><strong id="cat">-</strong></div>
-<div><span>Confidence</span><strong id="conf">-</strong></div>
+<div><span>Brand / model</span><strong id="brand">…</strong></div>
+<div><span>Condition</span><strong id="cond">…</strong></div>
+<div><span>Category</span><strong id="cat">…</strong></div>
+<div><span>Confidence</span><strong id="conf">…</strong></div>
 </div>
 <div class="card"><strong>Why this price</strong><ul id="notes" class="muted"></ul></div>
 <div class="card comp"><strong>Compare live listings</strong>
@@ -73,7 +72,7 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 <section id="history" class="screen"><h2 class="title">History</h2><div id="hist"></div></section>
 <section id="settings" class="screen">
 <h2 class="title">Thrift AI key</h2>
-<p class="muted">Paste the Gemini key you already created.</p>
+<p class="muted">Gemini key from AI Studio. Stays on this phone.</p>
 <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off"/>
 <button class="take" id="saveKey" type="button" style="margin-top:12px">Save key</button>
 <p class="ok" id="saved"></p>
@@ -87,26 +86,38 @@ h1{font-size:18px;margin:0}.sub{margin:0;color:var(--muted);font-size:12px}
 <script>
 const $=id=>document.getElementById(id);
 const KEY="sw_gemini_key", HIST="sw_hist_v5";
-const MODELS=["gemini-3.6-flash","gemini-3.5-flash"];
+const MODELS=["gemini-3.6-flash","gemini-3.5-flash","gemini-3.8-flash"];
 const state={current:null,history:(()=>{try{return JSON.parse(localStorage.getItem(HIST)||"[]")}catch(e){return[]}})()};
 function saveHist(){try{localStorage.setItem(HIST,JSON.stringify(state.history.slice(0,16).map(h=>Object.assign({},h,{image:(h.image||"").slice(0,80000)}))))}catch(e){}}
 function getKey(){return (localStorage.getItem(KEY)||"").trim()}
-function banner(){$("keyBanner").textContent=getKey()?"Ready. Uses gemini-3.6-flash.":"Tap AI key and paste your Gemini key."}
+function banner(){$("keyBanner").textContent=getKey()?"Key saved. After you snap, wait on this next screen.":"Tap AI key and paste your Gemini key first."}
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.go===id||((id==="result"||id==="settings")&&b.dataset.go==="home")));if(id==="history")renderHist();if(id==="settings")$("apiKey").value=getKey()}
 function q(s){return encodeURIComponent(s||"")}
-function compress(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{try{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;const s=Math.min(1,1024/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",0.8))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read photo"))};img.src=url})}
-function parseJson(text){const clean=(text||"").replace(/```json/gi,"").replace(/```/g,"").trim();return JSON.parse(clean.slice(clean.indexOf("{"),clean.lastIndexOf("}")+1))}
+function compress(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{try{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;const s=Math.min(1,768/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",0.7))}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read photo"))};img.src=url})}
+function parseJson(text){const clean=(text||"").replace(/```json/gi,"").replace(/```/g,"").trim();const start=clean.indexOf("{"), end=clean.lastIndexOf("}"); if(start<0||end<start) throw new Error("Model did not return JSON"); return JSON.parse(clean.slice(start,end+1))}
+function extractText(data){
+  const parts=((((data.candidates||[])[0]||{}).content||{}).parts)||[];
+  return parts.map(p=>p.text||"").join("\n").trim();
+}
 async function askGemini(dataUrl){
   const key=getKey(); if(!key) throw new Error("Add a Gemini API key first (AI key).");
-  const prompt="You are a US thrift-store buyer. Identify the object. Price USED Marketplace/eBay resale, not retail. Return ONLY JSON keys: name,brand,model,category,condition,era,resaleLow,resaleHigh,floor,confidence,notes,searchQuery,listingTitle,listingBody. notes=array. A wired Logitech mouse is typically $6-15 used. Never call a computer mouse furniture.";
+  const prompt="You are a US thrift-store buyer looking at a photo. Identify the exact item. Price USED Facebook Marketplace and eBay resale, not retail. Return ONLY JSON with keys name,brand,model,category,condition,era,resaleLow,resaleHigh,floor,confidence,notes,searchQuery,listingTitle,listingBody. notes must be an array of short strings. A wired Logitech office mouse is typically $6-15 used. Never call a computer mouse furniture.";
   const b64=dataUrl.split(",")[1];
   let last="Gemini error";
   for (const model of MODELS){
-    const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt},{inline_data:{mime_type:"image/jpeg",data:b64}}]}],generationConfig:{temperature:0.2}})});
+    $("aiLine").textContent="Calling "+model+"…";
+    const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":key},
+      body:JSON.stringify({
+        contents:[{role:"user",parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:prompt}]}],
+        generationConfig:{temperature:0.2,responseMimeType:"application/json"}
+      })
+    });
     const data=await res.json();
-    if(!res.ok){ last=(data.error&&data.error.message)||(model+" failed"); continue; }
-    const text=((((data.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||"").join("\n");
-    if(!text){ last=model+" returned no text"; continue; }
+    if(!res.ok){ last=(data.error&&data.error.message)||(model+" HTTP "+res.status); continue; }
+    const text=extractText(data);
+    if(!text){ last=model+" returned no text (finish="+((((data.candidates||[])[0]||{}).finishReason)||"?")+")"; continue; }
     return parseJson(text);
   }
   throw new Error(last);
@@ -128,7 +139,7 @@ function paint(item){
 function persist(item){const i=state.history.findIndex(h=>h.id===item.id); if(i>=0) state.history[i]=item; else state.history.unshift(item); saveHist()}
 function renderHist(){if(!state.history.length){$("hist").innerHTML='<p class="muted">No scans yet.</p>';return}$("hist").innerHTML=state.history.map((h,i)=>'<div class="card hist" data-i="'+i+'"><img src="'+(h.image||"")+'" alt=""><div><strong>'+(h.name||"Item")+'</strong><div class="muted">$'+(h.resaleLow||"?")+'\u2013$'+(h.resaleHigh||"?")+'</div></div></div>').join("");$("hist").querySelectorAll(".hist").forEach(el=>el.onclick=()=>{state.current=state.history[+el.dataset.i];paint(state.current);show("result")})}
 async function run(file){
-  $("err").textContent=""; show("result"); $("aiLine").textContent="Asking Gemini 3.6...";
+  $("err").textContent=""; show("result"); $("aiLine").textContent="Compressing photo…"; $("pname").textContent="Identifying…"; $("price").textContent="…";
   try{
     const dataUrl=await compress(file); $("img").src=dataUrl;
     const ai=await askGemini(dataUrl);
@@ -136,7 +147,11 @@ async function run(file){
     item.resaleLow=Number(item.resaleLow)||0; item.resaleHigh=Number(item.resaleHigh)||item.resaleLow; item.floor=Number(item.floor)||Math.max(1,Math.round(item.resaleLow*0.7));
     if(!Array.isArray(item.notes)) item.notes=[String(item.notes||"")];
     state.current=item; persist(item); paint(item); $("aiLine").textContent="Thrift AI result";
-  }catch(e){$("err").textContent=e.message||String(e); show("home")}
+  }catch(e){
+    $("err").textContent=e.message||String(e);
+    $("aiLine").textContent="AI failed — see the red text";
+    $("pname").textContent="Could not finish";
+  }
   $("cam").value=""; $("lib").value="";
 }
 $("takeBtn").onclick=()=>$("cam").click(); $("upBtn").onclick=()=>$("lib").click();
