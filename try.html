@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SnapWorth try</title>
+  <style>
+    :root { --bg:#0f1410; --card:#1d261f; --ink:#f4efe4; --muted:#b7c0b4; --gold:#d4b36a; --line:rgba(244,239,228,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#0f1410; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+    .app { max-width:480px; margin:0 auto; padding:18px 16px 90px; }
+    h1 { font-size:22px; margin:0; }
+    .sub { color:var(--muted); margin:4px 0 18px; font-size:13px; }
+    .take, .upload, .btn { width:100%; border:0; border-radius:16px; padding:16px; font-size:16px; font-weight:700; margin:8px 0; }
+    .take { background:#d4b36a; color:#1a1408; }
+    .upload,.btn { background:#171e18; color:var(--ink); border:1px solid var(--line); }
+    .err { color:#e07a6a; min-height:1.2em; }
+    .thumb { width:100%; max-height:240px; object-fit:cover; border-radius:14px; background:#111; display:none; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-top:12px; display:none; }
+    .price { font-size:28px; color:#f0d59a; margin:6px 0; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>SnapWorth test</h1>
+    <p class="sub" id="status">Ready. This page does not use the 3-scan lock.</p>
+    <button class="take" id="takeBtn" type="button">TAKE PHOTO</button>
+    <button class="upload" id="upBtn" type="button">Upload from camera roll</button>
+    <input id="cam" class="hidden" type="file" accept="image/*" capture="environment" />
+    <input id="lib" class="hidden" type="file" accept="image/*" />
+    <p class="err" id="err"></p>
+    <img class="thumb" id="img" alt="preview" />
+    <div class="card" id="card">
+      <div id="title">—</div>
+      <div class="price" id="price">—</div>
+      <div id="detail" style="color:#b7c0b4;font-size:14px"></div>
+    </div>
+  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function fail(m) { $("err").textContent = m; $("status").textContent = "Failed"; }
+    function ok(m) { $("err").textContent = ""; $("status").textContent = m; }
+    function compress(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error("No file"));
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const max = 800;
+            let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+            const s = Math.min(1, max / Math.max(w,h));
+            w = Math.max(1, Math.round(w*s)); h = Math.max(1, Math.round(h*s));
+            const c = document.createElement("canvas"); c.width=w; c.height=h;
+            c.getContext("2d").drawImage(img,0,0,w,h);
+            URL.revokeObjectURL(url);
+            resolve({ src:c.toDataURL("image/jpeg",0.7), w, h, bytes:file.size, name:file.name||"photo" });
+          } catch(e) { URL.revokeObjectURL(url); reject(e); }
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not decode photo")); };
+        img.src = url;
+      });
+    }
+    async function run(file) {
+      ok("Reading photo…");
+      try {
+        const m = await compress(file);
+        $("img").src = m.src; $("img").style.display = "block";
+        const title = /tool|drill|wrench/.test((m.name||"").toLowerCase()) ? "Tool" : "Photographed item";
+        const low = 15, high = 65;
+        $("title").textContent = title;
+        $("price").textContent = "$" + low + "–$" + high;
+        $("detail").textContent = m.w + "x" + m.h + " · " + Math.round(m.bytes/1024) + " KB · " + (m.name||"photo");
+        $("card").style.display = "block";
+        ok("Photo processed");
+      } catch(e) { fail(e.message || String(e)); }
+      $("cam").value=""; $("lib").value="";
+    }
+    $("takeBtn").onclick = () => $("cam").click();
+    $("upBtn").onclick = () => $("lib").click();
+    $("cam").onchange = (e) => e.target.files && e.target.files[0] && run(e.target.files[0]);
+    $("lib").onchange = (e) => e.target.files && e.target.files[0] && run(e.target.files[0]);
+  </script>
+</body>
+</html>
