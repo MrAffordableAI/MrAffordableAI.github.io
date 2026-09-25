@@ -4,9 +4,66 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Flirty — Demo</title>
+<style>
+  :root { --pink:#ff4d8d; --ink:#1b1220; --muted:#7a6b75; --bg:#fff5f8; --card:#fff; --line:#f0dce4; }
+  *{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;background:#111;color:var(--ink);min-height:100dvh;display:grid;place-items:center}
+  .stage{width:min(420px,100%);height:min(860px,100dvh);background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  header.app{padding:14px 16px 8px;display:flex;align-items:center;justify-content:space-between}
+  .logo{font-weight:800;letter-spacing:-.03em;font-size:22px}.logo span{color:var(--pink)}
+  .chip{background:#ffe4ee;color:var(--pink);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+  main{flex:1;overflow:auto;padding:0 16px 92px}
+  .card{background:var(--card);border-radius:22px;overflow:hidden;box-shadow:0 10px 30px rgba(255,77,141,.08);margin-bottom:14px}
+  .hero{height:280px;background:linear-gradient(135deg,#ffb3cc,#ff7ab5 40%,#c56bff);display:grid;place-items:end start;padding:16px;color:#fff}
+  .hero h2{margin:0;font-size:26px}.hero p{margin:4px 0 0;opacity:.92}
+  .row{display:flex;gap:10px;padding:14px}
+  button.primary,button.ghost,button.spark{border:0;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer}
+  button.primary{background:linear-gradient(90deg,var(--pink),#c56bff);color:#fff;flex:1}
+  button.ghost{background:#fff;border:1px solid var(--line);flex:1}
+  button.spark{background:#fff0f6;color:var(--pink)}
+  .nav{position:absolute;left:0;right:0;bottom:0;background:#fff;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 6px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -8px 24px rgba(0,0,0,.06)}
+  .nav button{background:none;border:0;font-size:11px;font-weight:700;color:var(--muted);padding:8px 0}
+  .nav button.on{color:var(--pink)}
+  .hint{background:#1b1220;color:#fff;border-radius:16px;padding:12px 14px;font-size:13px;margin-bottom:12px}
+  .person{display:flex;gap:12px;align-items:center;padding:12px}
+  .ava{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,#ffb3cc,#c56bff)}
+  .muted{color:var(--muted);font-size:13px}
+  .feed-img{height:180px;background:linear-gradient(135deg,#ffd1e3,#e7c2ff)}
+  .toast{position:absolute;left:16px;right:16px;top:64px;background:#1b1220;color:#fff;padding:12px 14px;border-radius:14px;display:none;z-index:5}
+  h3{margin:6px 0 10px}.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+</style>
 </head>
 <body>
-<p>Redirecting to demo…</p>
-<script>location.replace('./flirty-demo.html')</script>
+  <div class="stage">
+    <div class="toast" id="toast"></div>
+    <header class="app"><div class="logo">Flirty<span>.</span></div><div class="chip">Demo</div></header>
+    <main id="screen"></main>
+    <nav class="nav">
+      <button class="on" data-tab="discover">Discover</button>
+      <button data-tab="feed">Feed</button>
+      <button data-tab="chats">Chats</button>
+      <button data-tab="profile">You</button>
+    </nav>
+  </div>
+<script>
+const people=[{name:"Maya",mood:"Coffee + playlists",bio:"Say something better than hey."},{name:"Jordan",mood:"Late-night walks",bio:"Mutual sparks only."},{name:"Riley",mood:"Flirt Mode on",bio:"Make it clever."}];
+let sparks=new Set(); let chats=[]; let tab="discover";
+function toast(msg){const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none",1800);}
+function spark(name){if(sparks.has(name))return; sparks.add(name); chats.unshift({name,last:"Spark matched. Say hi."}); toast("Spark sent. If they spark back, chat unlocks."); render();}
+function render(){
+  const el=document.getElementById("screen");
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
+  if(tab==="discover"){
+    el.innerHTML=`<div class="hint">Tap Spark on someone you like. Chat opens only on a mutual spark — that is the whole product.</div>`+people.map(p=>`<article class="card"><div class="hero"><div><h2>${p.name}</h2><p>${p.mood}</p></div></div><p style="padding:14px 14px 0;margin:0">${p.bio}</p><div class="row"><button class="ghost" onclick="toast('Passed. Next person.')">Skip</button><button class="primary" onclick="spark('${p.name}')">${sparks.has(p.name)?"Sparked":"Spark"}</button></div></article>`).join("");
+  } else if(tab==="feed"){
+    el.innerHTML=`<h3>Tonight</h3><article class="card"><div class="feed-img"></div><div class="person"><div class="ava"></div><div><b>Maya</b><div class="muted">sunset walk, no caption needed</div></div></div></article><article class="card"><div class="feed-img" style="background:linear-gradient(135deg,#c2e7ff,#ffd1e3)"></div><div class="person"><div class="ava"></div><div><b>Jordan</b><div class="muted">bookstore stacks</div></div></div></article>`;
+  } else if(tab==="chats"){
+    el.innerHTML=chats.length?chats.map(c=>`<article class="card person" onclick="toast('Chat unlocked with ${c.name}')"><div class="ava"></div><div><b>${c.name}</b><div class="muted">${c.last}</div></div></article>`).join(""):`<div class="empty">No chats yet.<br/>Spark someone on Discover first.</div>`;
+  } else {
+    el.innerHTML=`<article class="card" style="padding:16px"><h3 style="margin-top:0">You</h3><p class="muted">Flirt Mode is on. People on Discover can spark you.</p><button class="spark" onclick="toast('Flirt Mode stays on in this demo')">Flirt Mode: On</button></article><article class="card" style="padding:16px"><b>Pending sparks</b><p class="muted">${sparks.size} sent · 0 incoming in this demo</p></article>`;
+  }
+}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+render();
+</script>
 </body>
 </html>
