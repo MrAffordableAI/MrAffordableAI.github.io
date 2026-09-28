@@ -556,24 +556,27 @@ function seedAdventure() {
   if (!S.mission) {
     S.mission = { id: "parkspoil", title: "Chase the spoilers", blurb: "Sour Blobs are stealing picnic puffs.", need: 3, have: 0, done: false, prize: "Fairy Wings" };
   }
-  if (!S.activeLevel) seedEnemies();
+  if (!S.activeLevel) {
+    if (!(S.enemies || []).length || S.enemies.length > 3) seedEnemies();
+  }
+}
+function makeFoe(kind, x, y) {
+  return {
+    id: uid(), kind: kind.kind, name: kind.name, emoji: kind.emoji,
+    hp: kind.hp, max: kind.hp, puff: kind.puff, x, y, homeX: x, homeY: y
+  };
 }
 function seedEnemies() {
   const cx = S.x || 800, cy = S.y || 1580;
-  const spots = [[-100, 10], [95, -50], [-40, 120], [120, 90], [-130, -80], [30, -140]];
-  S.enemies = spots.map((off, i) => {
-    const kind = FOES[i % FOES.length];
-    const hp = kind.hp + (i === 0 ? 1 : 0);
-    return {
-      id: uid(),
-      kind: kind.kind,
-      name: kind.name,
-      emoji: kind.emoji,
-      hp, max: hp, puff: kind.puff,
-      x: cx + off[0],
-      y: cy + off[1]
-    };
-  });
+  const spots = [[-180, -30], [190, 40], [10, -200]];
+  S.enemies = spots.map((off, i) => makeFoe(FOES[i % FOES.length], cx + off[0], cy + off[1]));
+}
+function spawnOneFar() {
+  if (mode !== "map" || S.activeLevel || (S.enemies || []).length >= 3) return;
+  const ang = Math.random() * Math.PI * 2;
+  const r = 240;
+  S.enemies.push(makeFoe(FOES[Math.floor(Math.random() * FOES.length)], S.x + Math.cos(ang) * r, S.y + Math.sin(ang) * r));
+  drawFoes();
 }
 function seedOrbs() {
   S.orbs = [
@@ -858,23 +861,10 @@ function drawHazards() {
   ).join("");
 }
 function foeSVG(f) {
-  const pal = {
-    sour: ["#c9a6ff", "#7a5cff", "#4a2d8a"],
-    grump: ["#ffb199", "#e85d4c", "#7a2d22"],
-    ravel: ["#9fe4ff", "#5dade2", "#1a5276"],
-    drip: ["#b7e4f5", "#5dade2", "#1a5276"],
-    frost: ["#e7f4ff", "#9fd3ff", "#5a8ab8"],
-    boss: ["#ffd15c", "#ff6b9d", "#8e2a4a"]
-  }[f.boss ? "boss" : f.kind] || ["#c9a6ff", "#7a5cff", "#4a2d8a"];
-  const n = f.boss ? 86 : 70;
-  return `<svg class="foeart" width="${n}" height="${n}" viewBox="0 0 80 80">
-    <ellipse cx="40" cy="72" rx="18" ry="5" fill="rgba(70,40,30,.25)"/>
-    <ellipse cx="40" cy="42" rx="28" ry="26" fill="${pal[0]}" stroke="${pal[1]}" stroke-width="3"/>
-    <ellipse cx="28" cy="38" rx="7" ry="9" fill="#fff"/><ellipse cx="52" cy="38" rx="7" ry="9" fill="#fff"/>
-    <circle cx="30" cy="40" r="3.2" fill="#3a2a28"/><circle cx="54" cy="40" r="3.2" fill="#3a2a28"/>
-    <ellipse cx="40" cy="54" rx="8" ry="4" fill="${pal[2]}"/>
-    <circle cx="24" cy="48" r="5" fill="${pal[1]}" opacity=".45"/><circle cx="56" cy="48" r="5" fill="${pal[1]}" opacity=".45"/>
-  </svg>`;
+  const art = (typeof PUNI_FOE !== "undefined" && PUNI_FOE[f.kind]) ? PUNI_FOE[f.kind] : "";
+  const n = f.boss ? 96 : 78;
+  if (art) return `<img class="foeart" alt="" src="${art}" width="${n}" height="${n}" style="width:${n}px;height:${n}px;object-fit:contain;background:transparent;filter:drop-shadow(0 8px 8px rgba(70,40,30,.28))">`;
+  return `<div style="width:${n}px;height:${n}px;border-radius:50%;background:#cdb4ff"></div>`;
 }
 function drawFoes() {
   const box = $("#foes");
@@ -936,7 +926,7 @@ function hitFoe(id) {
     paintPuffs();
     paintQuest();
     if (S.activeLevel && S.enemies.length === 0) winLevel(S.activeLevel);
-    else if (!S.activeLevel && S.enemies.length < 3) seedEnemies();
+    else if (!S.activeLevel && S.enemies.length < 3) setTimeout(spawnOneFar, 1800);
   }
   save();
   drawFoes();
@@ -959,23 +949,25 @@ function startLevel(n) {
   S.activeLevel = n;
   const biome = BIOMES.find(x => x.id === st.biome) || BIOMES[0];
   paintBiome(st.biome);
-  const around = [[-80,-20],[80,10],[-40,90],[70,-80],[-100,70],[110,60],[-20,-110],[50,120]];
+  const around = [[-200,-20],[200,40],[0,-220]];
   S.enemies = [];
-  for (let i = 0; i < st.foes; i++) {
+  const count = Math.min(3, st.foes);
+  for (let i = 0; i < count; i++) {
     const kind = FOES[i % FOES.length];
     const hp = kind.hp + Math.floor(n / 10);
     const off = around[i % around.length];
+    const x = S.x + off[0], y = S.y + off[1];
     S.enemies.push({
       id: uid(), kind: kind.kind, name: kind.name, emoji: kind.emoji,
-      hp, max: hp, puff: kind.puff + n,
-      x: S.x + off[0], y: S.y + off[1]
+      hp, max: hp, puff: kind.puff + n, x, y, homeX: x, homeY: y
     });
   }
   if (st.boss) {
+    const x = S.x, y = S.y - 240;
     S.enemies.push({
-      id: uid(), kind: "boss", name: st.boss.name, emoji: st.boss.emoji,
+      id: uid(), kind: "sour", name: st.boss.name, emoji: st.boss.emoji,
       hp: st.boss.hp + Math.floor(n / 7), max: st.boss.hp, puff: st.boss.puff,
-      x: S.x + 30, y: S.y - 130, boss: true
+      x, y, homeX: x, homeY: y, boss: true
     });
   }
   save();
@@ -1278,13 +1270,25 @@ function loop(t) {
     pl.classList.toggle("walking", !!(len > 0.12 || follow) && !flying);
     pl.classList.toggle("flying", flying);
   }
-  (S.enemies || []).forEach(f => {
+  const pack = S.enemies || [];
+  pack.forEach(f => {
     const d = dist(S.x, S.y, f.x, f.y) || 1;
-    if (d < 500) {
-      const chase = f.boss ? 55 : 38;
-      f.x += ((S.x - f.x) / d) * chase * dt + Math.sin((t / 180) + f.x) * 12 * dt;
-      f.y += ((S.y - f.y) / d) * chase * dt + Math.cos((t / 200) + f.y) * 12 * dt;
+    if (d < 100) {
+      f.x += ((f.x - S.x) / d) * 70 * dt;
+      f.y += ((f.y - S.y) / d) * 70 * dt;
+    } else {
+      const hx = f.homeX || f.x, hy = f.homeY || f.y;
+      f.x += Math.sin((t / 700) + f.x * 0.01) * 28 * dt + (hx - f.x) * 0.4 * dt;
+      f.y += Math.cos((t / 800) + f.y * 0.01) * 28 * dt + (hy - f.y) * 0.4 * dt;
     }
+    pack.forEach(o => {
+      if (o.id === f.id) return;
+      const g = dist(f.x, f.y, o.x, o.y) || 1;
+      if (g < 90) {
+        f.x += ((f.x - o.x) / g) * 40 * dt;
+        f.y += ((f.y - o.y) / g) * 40 * dt;
+      }
+    });
     f.x = Math.max(120, Math.min(1480, f.x));
     f.y = Math.max(140, Math.min(1780, f.y));
     const el = document.querySelector(`[data-foe="${f.id}"]`);
