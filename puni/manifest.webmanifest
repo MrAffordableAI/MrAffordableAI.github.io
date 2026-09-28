@@ -1,0 +1,11 @@
+{
+  "name": "Puni Go",
+  "short_name": "Puni Go",
+  "description": "Squeeze mystery orbs. Collect cute squishies. You won't know what you get.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFF8F1",
+  "theme_color": "#FF8FAB",
+  "lang": "en"
+}
