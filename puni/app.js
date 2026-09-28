@@ -637,6 +637,25 @@ function enterMap() {
 }
 
 function mapArt() {
+  const painted = (typeof PUNI_SCENE !== "undefined" && PUNI_SCENE.map) ? PUNI_SCENE.map : "";
+  const fire = Array.from({ length: 16 }, (_, i) =>
+    `<i class="fly" style="left:${8 + (i * 11) % 84}%;top:${12 + (i * 17) % 70}%;animation-delay:${(i % 8) * 0.35}s"></i>`
+  ).join("");
+  const life = `<div class="life">
+    ${fire}
+    <i class="lantern" style="left:210px;top:1480px"></i>
+    <i class="lantern" style="left:1080px;top:1500px"></i>
+    <i class="lantern" style="left:360px;top:540px"></i>
+    <i class="lantern" style="left:1180px;top:360px"></i>
+    <i class="koi" style="left:1320px;top:980px"></i>
+    <i class="koi late" style="left:1400px;top:1240px"></i>
+    <i class="bloom" style="left:280px;top:1180px"></i>
+    <i class="bloom" style="left:430px;top:1280px"></i>
+    <i class="bloom" style="left:200px;top:1320px"></i>
+  </div>`;
+  if (painted) {
+    return `<img class="mapart painted" src="${painted}" width="1600" height="1900" alt="">${life}`;
+  }
   const trees = [
     [160,720],[240,640],[980,640],[640,480],[520,860],[1080,780],[200,980],[1440,700],
     [420,300],[700,260],[1500,980],[180,1500],[1040,1500],[1400,1560],[240,1700]
@@ -649,7 +668,7 @@ function mapArt() {
       <rect x="${x - 4}" y="${y + 20}" width="8" height="16" rx="3" fill="#c9855a"/>
     </g>`;
   }).join("");
-  return `<svg class="mapart" viewBox="0 0 1600 1900" width="1600" height="1900">
+  return `${life}<svg class="mapart" viewBox="0 0 1600 1900" width="1600" height="1900">
     <defs>
       <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#c8f08a"/><stop offset="0.55" stop-color="#9ed85a"/><stop offset="1" stop-color="#7ec44a"/>
@@ -760,6 +779,16 @@ function bindMap() {
   const fight = $("#fight");
   if (fight) fight.onclick = () => { AudioBus.ui(); demoBattle(); };
   paintWeather();
+  root.querySelectorAll(".bloom").forEach(el => {
+    el.onclick = ev => {
+      ev.stopPropagation();
+      el.classList.add("popped");
+      S.puffs += 1;
+      paintPuffs();
+      toast("A flower left a puff.");
+      AudioBus.heal();
+    };
+  });
   $("#action").onclick = () => doAction(nearestAction());
   $("#about").onclick = () => openAbout();
   $("#puffs").onclick = () => toast("Puffs open capsules. Earn them by squeezing.");
@@ -1308,6 +1337,20 @@ function resolveMove(actor, target, move, b, side) {
 }
 
 let battle = null;
+function attackFX(move) {
+  const burst = (typeof PUNI_SCENE !== "undefined" && PUNI_SCENE.burst) ? PUNI_SCENE.burst : "";
+  const bits = Array.from({ length: 18 }, (_, i) => {
+    const em = { squish: "💫", bounce: "⭐", hug: "💗", pop: "💥", power: "✨" }[move] || "✨";
+    return `<i class="bit" style="--a:${i * 20}deg;--d:${80 + (i % 5) * 18}px;animation-delay:${(i % 6) * 0.03}s">${em}</i>`;
+  }).join("");
+  const title = { squish: "PUNI SQUISH", bounce: "BOUNCE AWAY", hug: "FLUFF HUG", pop: "POP BURST", power: "SUPER MOVE" }[move] || "PUNI!";
+  return `<div class="fx fx-${move}">
+    <div class="shock"></div>
+    ${burst ? `<img class="burst" src="${burst}" alt="">` : ""}
+    <div class="bits">${bits}</div>
+    <b class="banner">${title}</b>
+  </div>`;
+}
 function renderBattle() {
   const me = battle.me, foe = battle.foe;
   const sp = species(me.inst.speciesId), fp = species(foe.inst.speciesId);
@@ -1315,42 +1358,52 @@ function renderBattle() {
   if (!ov) return;
   const hitFoe = battle.fx === "me";
   const hitMe = battle.fx === "foe";
+  const arena = (typeof PUNI_SCENE !== "undefined" && PUNI_SCENE.arena) ? PUNI_SCENE.arena : "";
   ov.innerHTML = `<style>
-    #battle{background:radial-gradient(120% 80% at 50% 0%,#7a5cff 0%,#2c1e6e 42%,#1b1030 100%)!important;color:#fff}
-    #battle .arena{position:relative;overflow:hidden;border-radius:24px;padding:10px 8px 16px}
-    #battle .stage{display:flex;justify-content:space-between;align-items:flex-end;min-height:210px;padding:8px}
+    #battle{background:#16082c url(${arena}) center/cover no-repeat!important;color:#fff}
+    #battle .arena{position:relative;overflow:hidden;border-radius:24px;padding:10px 8px 16px;min-height:100%}
+    #battle .stage{display:flex;justify-content:space-between;align-items:flex-end;min-height:250px;padding:8px;position:relative;z-index:2}
     #battle .battler{width:46%;text-align:center}
-    #battle .battler img,#battle .battler svg{animation:idleBob 1.1s ease-in-out infinite}
-    #battle .hit img,#battle .hit svg{animation:whack .35s ease}
-    #battle .lunge img,#battle .lunge svg{animation:lunge .35s ease}
+    #battle .battler img,#battle .battler svg{animation:idleBob 1.1s ease-in-out infinite;filter:drop-shadow(0 12px 16px rgba(0,0,0,.35))}
+    #battle .hit img,#battle .hit svg{animation:whack .4s ease}
+    #battle .lunge img,#battle .lunge svg{animation:lunge .4s ease}
     @keyframes idleBob{50%{transform:translateY(-8px)}}
-    @keyframes whack{0%{transform:translate(0,0) rotate(0)}30%{transform:translate(14px,-6px) rotate(8deg)}100%{transform:translate(0,0)}}
-    @keyframes lunge{0%{transform:translate(0,0)}40%{transform:translate(18px,-10px) scale(1.08)}100%{transform:translate(0,0)}}
-    #battle .slash{position:absolute;left:50%;top:42%;width:90px;height:8px;margin-left:-45px;background:linear-gradient(90deg,transparent,#fff,#ffe08a,transparent);transform:rotate(-18deg) scaleX(0);animation:slash .4s ease}
-    @keyframes slash{50%{transform:rotate(-18deg) scaleX(1)}100%{opacity:0}}
-    #battle .dmg{position:absolute;left:58%;top:28%;font-weight:900;font-size:28px;color:#ffe08a;text-shadow:0 2px 0 #5a2a16;animation:up .7s ease forwards}
-    @keyframes up{to{transform:translateY(-40px);opacity:0}}
-    #battle .fluff{background:rgba(255,255,255,.2)}
+    @keyframes whack{0%{filter:brightness(1)}25%{transform:translate(16px,-8px) rotate(10deg);filter:brightness(2)}100%{transform:none}}
+    @keyframes lunge{0%{transform:none}40%{transform:translate(22px,-14px) scale(1.12)}100%{transform:none}}
+    #battle .fluff{background:rgba(255,255,255,.22)}
     #battle .fluff span{background:linear-gradient(90deg,#ffb3c6,#ff5d8f)}
-    #battle .log{color:#fff;background:rgba(0,0,0,.28);border-radius:14px;padding:8px 10px}
-    #battle .moves button,#battle .power{box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    #battle .log{color:#fff;background:rgba(12,6,28,.55);border-radius:14px;padding:8px 10px;position:relative;z-index:3}
     #battle b, #battle small{color:#fff}
     #battle .muted{color:#f3e6dc}
+    #battle .fx{position:absolute;inset:8% 6% 38%;z-index:4;pointer-events:none}
+    #battle .burst{position:absolute;left:50%;top:46%;width:260px;height:260px;margin:-130px 0 0 -130px;animation:boom .55s ease forwards;mix-blend-mode:screen}
+    @keyframes boom{0%{transform:scale(.2);opacity:0}40%{transform:scale(1.15);opacity:1}100%{transform:scale(1.35);opacity:0}}
+    #battle .shock{position:absolute;left:50%;top:48%;width:20px;height:20px;margin:-10px;border:4px solid #fff;border-radius:50%;animation:shock .55s ease forwards}
+    @keyframes shock{to{transform:scale(16);opacity:0}}
+    #battle .banner{position:absolute;left:50%;top:8%;transform:translateX(-50%);background:linear-gradient(90deg,#ff8fab,#f6c453);color:#4a342e;padding:6px 16px;border-radius:999px;font-size:16px;animation:popIn .35s ease}
+    #battle .bits{position:absolute;left:50%;top:48%}
+    #battle .bit{position:absolute;left:0;top:0;animation:spray .7s ease forwards;font-size:22px}
+    @keyframes spray{to{transform:rotate(var(--a)) translate(var(--d)) scale(1.4);opacity:0}}
+    #battle.shake .arena{animation:rumble .35s ease}
+    @keyframes rumble{25%{transform:translate(-6px,3px)}50%{transform:translate(7px,-2px)}75%{transform:translate(-4px,2px)}}
+    #battle .fx-hug .shock{border-color:#ff8fab}
+    #battle .fx-pop .shock{border-color:#ffe08a}
+    #battle .fx-power .shock{border-color:#cdb4ff;border-width:6px}
   </style>
-  <div class="battle arena ${battle.fx ? "shake" : ""}">
+  <div class="battle arena">
     <div class="stage">
-      <div class="battler ${hitMe ? "hit" : ""} ${battle.fx === "me" ? "lunge" : ""}">${faceHTML(sp, me.inst, 132)}
+      <div class="battler ${hitMe ? "hit" : ""} ${battle.fx === "me" ? "lunge" : ""}">${faceHTML(sp, me.inst, 148)}
         <b>${esc(me.name)}</b>
         <div class="fluff ${me.fluff / me.max < 0.3 ? "low" : ""}"><span style="width:${Math.max(0, me.fluff / me.max * 100)}%"></span></div>
         <small class="muted">${esc(WEAPON[sp.id] || "Soft Fist")}</small>
       </div>
-      <div class="battler foe ${hitFoe ? "hit" : ""}">${faceHTML(fp, foe.inst, 132)}
+      <div class="battler foe ${hitFoe ? "hit" : ""}">${faceHTML(fp, foe.inst, 148)}
         <b>${esc(foe.name)}</b>
         <div class="fluff ${foe.fluff / foe.max < 0.3 ? "low" : ""}"><span style="width:${Math.max(0, foe.fluff / foe.max * 100)}%"></span></div>
         <small class="muted">${esc(WEAPON[fp.id] || "Soft Fist")}</small>
       </div>
     </div>
-    ${battle.fx ? `<i class="slash"></i><b class="dmg">${hitFoe || hitMe ? "PUNI!" : ""}</b>` : ""}
+    ${battle.fx ? attackFX(battle.move || "squish") : ""}
     <div class="log">${esc(battle.log)}</div>
     <div class="moves">
       <button data-m="squish">Squish</button>
@@ -1361,6 +1414,7 @@ function renderBattle() {
     <button class="power" data-m="power" ${battle.powerUsed.me ? "disabled" : ""}>${esc(sp.power)} · ${esc(WEAPON[sp.id] || "Soft Fist")}</button>
     <button class="btn ghost wide" id="run" style="margin-top:8px">Wiggle out</button>
   </div>`;
+  ov.classList.toggle("shake", !!battle.fx);
   ov.querySelectorAll("[data-m]").forEach(b => b.onclick = () => playerMove(b.dataset.m));
   $("#run", ov).onclick = () => endBattle(false, true);
 }
@@ -1393,8 +1447,14 @@ async function playerMove(move) {
   const order = foeFirst ? ["foe", "me"] : ["me", "foe"];
   for (const side of order) {
     if (battle.over) break;
-    if (side === "me") battle.log = resolveMove(battle.me, battle.foe, move, battle, "me");
-    else battle.log = resolveMove(battle.foe, battle.me, aiMove(battle), battle, "foe");
+    if (side === "me") {
+      battle.move = move;
+      battle.log = resolveMove(battle.me, battle.foe, move, battle, "me");
+    } else {
+      const ai = aiMove(battle);
+      battle.move = ai;
+      battle.log = resolveMove(battle.foe, battle.me, ai, battle, "foe");
+    }
     battle.fx = side;
     renderBattle();
     AudioBus.pop();
