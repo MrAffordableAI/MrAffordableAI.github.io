@@ -81,8 +81,46 @@ const PLACES = [
   { id: "shrine", name: "Soft Shrine", x: 400, y: 560, icon: "⛩️", kind: "shrine" },
   { id: "hill", name: "Moon Hill", x: 1180, y: 300, icon: "🌙", kind: "moon" },
   { id: "park", name: "Sakura Park", x: 360, y: 1240, icon: "🌸", kind: "park" },
-  { id: "river", name: "Pearl River", x: 1260, y: 1160, icon: "🫧", kind: "river" }
+  { id: "river", name: "Pearl River", x: 1200, y: 1160, icon: "🫧", kind: "river" },
+  { id: "arena", name: "Squish Ring", x: 640, y: 880, icon: "⚔️", kind: "arena" }
 ];
+const WEAPON = {
+  mochiko: "Mochi Mallet", sakura: "Petal Fan", yuzu: "Zest Star", onigiri: "Nori Cape",
+  kumo: "Cotton Web", dango: "Triple Skewer", rei: "Puddle Ring", chili: "Heat Mitt",
+  moss: "Nap Cap", pearl: "River Pearl", plum: "Dusk Fan", nebula: "Star Bell",
+  hanabi: "Sparkler Wand", snow: "Powder Puff", kitsune: "Foxfire Tail", jelly: "Jelly Whip",
+  tsukimochi: "Moon Pestle", matcha: "Tea Whisk", taiyaki: "Warm Tail", manju: "Bun Fist",
+  soda: "Fizz Straw", boba: "Pearl Sling", wagashi: "Song Fan", ame: "Candy Prism",
+  kompeito: "Star Sugar"
+};
+const BLOCKS = [
+  { x: 760, y: 1660, w: 90, h: 80 },
+  { x: 620, y: 1580, w: 70, h: 40 },
+  { x: 920, y: 1600, w: 80, h: 36 },
+  { x: 742, y: 980, w: 116, h: 78 },
+  { x: 360, y: 500, w: 80, h: 70 },
+  { x: 200, y: 700, w: 70, h: 70 },
+  { x: 980, y: 620, w: 60, h: 60 },
+  { x: 500, y: 860, w: 70, h: 50 },
+  { x: 1080, y: 760, w: 70, h: 50 },
+  { x: 240, y: 1180, w: 50, h: 50 },
+  { x: 1280, y: 200, w: 320, h: 1700 }
+];
+function blocked(x, y) {
+  if (x < 90 || y < 90 || x > WORLD.w - 90 || y > WORLD.h - 90) return true;
+  for (const b of BLOCKS) {
+    if (x > b.x - 18 && x < b.x + b.w + 18 && y > b.y - 18 && y < b.y + b.h + 18) return true;
+  }
+  return false;
+}
+function weatherNow() {
+  const h = new Date().getHours();
+  if (h >= 19 || h < 6) return "night";
+  if (h >= 16) return "dusk";
+  const day = today().split("-").reduce((a, n) => a + Number(n), 0);
+  return ["sun", "petals", "rain", "sun", "petals"][day % 5];
+}
+
 const RIVALS = [
   { id: "hana", name: "Hana", line: "My galaxy cat only naps for winners.", speciesId: "nebula", colorway: "golden", x: 900, y: 820 },
   { id: "ren", name: "Ren", line: "Onigiri Oni is shy. Win, and you may echo it.", speciesId: "onigiri", colorway: "blush", x: 460, y: 1320 },
@@ -549,9 +587,11 @@ function enterMap() {
       <button class="pill" id="puffs">${S.puffs} puffs</button>
     </div>
     <div class="joy" id="joy"><i id="knob"></i></div>
+    <div class="wx" id="wx"></div>
     <button class="glow-btn" id="glow">Glow</button>
+    <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
-    ${S.seenCoach ? "" : `<div class="coach" id="coach"><b>Tap a glowing orb.</b><span class="muted">You walk over, you squeeze, you do not know what pops out. The Glow button chases the nearest one.</span><div style="margin-top:8px"><button class="btn primary" id="okcoach">Got it</button></div></div>`}
+    ${S.seenCoach ? "" : `<div class="coach" id="coach"><b>Orbs to catch. Gold Battle to fight.</b><span class="muted">Glow walks you to a mystery orb. Trees and the river block you. Battle starts a demo squish-duel with unique weapons.</span><div style="margin-top:8px"><button class="btn primary" id="okcoach">Got it</button></div></div>`}
     <nav class="nav" id="nav">
       <button data-tab="map" class="on">🗺️<span>Map</span></button>
       <button data-tab="dex">📒<span>Dex</span></button>
@@ -689,6 +729,9 @@ function bindMap() {
   joyEl.addEventListener("pointerup", end);
   joyEl.addEventListener("pointercancel", end);
   $("#glow").onclick = () => { AudioBus.ui(); followNearest(); };
+  const fight = $("#fight");
+  if (fight) fight.onclick = () => { AudioBus.ui(); demoBattle(); };
+  paintWeather();
   $("#action").onclick = () => doAction(nearestAction());
   $("#about").onclick = () => openAbout();
   $("#puffs").onclick = () => toast("Puffs open capsules. Earn them by squeezing.");
@@ -734,7 +777,7 @@ function nearestAction() {
   for (const p of PLACES) {
     const d = dist(S.x, S.y, p.x, p.y);
     if (d < 110 && (!best || d < bd)) {
-      const labels = { den: "Enter your den", cafe: "Open the cafe", shrine: "Visit the shrine", moon: "Listen for the moon", park: "Picnic in the park", river: "Watch the river" };
+      const labels = { den: "Enter your den", cafe: "Open the cafe", shrine: "Visit the shrine", moon: "Listen for the moon", park: "Picnic in the park", river: "Watch the river", arena: "Enter the Squish Ring" };
       best = { type: "place", id: p.id, label: labels[p.kind] };
       bd = d;
     }
@@ -774,12 +817,16 @@ function loop(t) {
   if (keys["a"] || keys["arrowleft"]) mx -= 1;
   if (keys["d"] || keys["arrowright"]) mx += 1;
   const len = Math.hypot(mx, my);
+  function step(nx, ny) {
+    const ox = S.x, oy = S.y;
+    if (!blocked(nx, S.y)) S.x = nx;
+    if (!blocked(S.x, ny)) S.y = ny;
+    if (S.x !== ox || S.y !== oy) walkBuf += Math.hypot(S.x - ox, S.y - oy);
+  }
   if (len > 0.12) {
     follow = null;
     const sp = 170;
-    S.x += (mx / len) * sp * dt;
-    S.y += (my / len) * sp * dt;
-    walkBuf += sp * dt;
+    step(S.x + (mx / len) * sp * dt, S.y + (my / len) * sp * dt);
   } else if (follow) {
     const d = dist(S.x, S.y, follow.x, follow.y);
     if (d < 24) {
@@ -787,13 +834,16 @@ function loop(t) {
       follow = null;
       if (then) then();
     } else {
-      S.x += ((follow.x - S.x) / d) * 170 * dt;
-      S.y += ((follow.y - S.y) / d) * 170 * dt;
-      walkBuf += 170 * dt;
+      const sp = 170;
+      const nx = S.x + ((follow.x - S.x) / d) * sp * dt;
+      const ny = S.y + ((follow.y - S.y) / d) * sp * dt;
+      const before = { x: S.x, y: S.y };
+      step(nx, ny);
+      if (S.x === before.x && S.y === before.y && d < 140) {
+        S.x = follow.x; S.y = follow.y;
+      }
     }
   }
-  S.x = Math.max(90, Math.min(WORLD.w - 90, S.x));
-  S.y = Math.max(90, Math.min(WORLD.h - 90, S.y));
   const pl = $("#player");
   if (pl) pl.classList.toggle("walking", !!(len > 0.12 || follow));
   if (walkBuf > 220) {
@@ -1086,6 +1136,7 @@ function openPlace(p) {
   if (p.kind === "cafe") return openCapsule();
   if (p.kind === "shrine") return openRival(RIVALS.find(r => r.id === "okami"));
   if (p.kind === "moon") return callMoon();
+  if (p.kind === "arena") return demoBattle();
   if (p.kind === "park") {
     burst(["#ffb7c8", "#fff", "#cdb4ff"]);
     S.puffs += 1; paintPuffs(); save();
@@ -1124,6 +1175,33 @@ function openAbout() {
     </div>`);
   $("#mute").onclick = () => { S.muted = !S.muted; save(); toast(S.muted ? "Quiet town" : "Puni sounds on"); openAbout(); };
   $("#wipe").onclick = () => { if (confirm("Release every squishy on this phone?")) { S = blankSave(); save(); closeSheet(); showTitle(); } };
+}
+
+function paintWeather() {
+  const layer = $("#wx");
+  if (!layer) return;
+  const w = weatherNow();
+  const map = $("#map");
+  if (map) {
+    map.style.filter = w === "night" ? "brightness(0.72) saturate(1.1)" : w === "dusk" ? "sepia(0.18) saturate(1.15)" : "none";
+  }
+  if (w === "rain") {
+    layer.innerHTML = Array.from({ length: 22 }, (_, i) =>
+      `<i class="drop" style="left:${(i * 9) % 100}%;animation-delay:${(i % 7) * 0.18}s"></i>`).join("");
+  } else if (w === "petals" || w === "dusk") {
+    layer.innerHTML = Array.from({ length: 14 }, (_, i) =>
+      `<i class="petal" style="left:${6 + i * 7}%;animation-delay:${i * 0.4}s;background:${["#ffb7c8","#fff","#cdb4ff"][i % 3]}"></i>`).join("");
+  } else if (w === "night") {
+    layer.innerHTML = Array.from({ length: 10 }, (_, i) =>
+      `<i class="spark" style="left:${10 + i * 8}%;top:${8 + (i % 4) * 10}%;animation-delay:${i * 0.2}s"></i>`).join("");
+  } else {
+    layer.innerHTML = `<i class="sunbeam"></i>`;
+  }
+}
+function demoBattle() {
+  if (!lead()) return toast("Catch a squishy first, then fight.");
+  const pool = RIVALS;
+  openRival(pool[Math.floor(Math.random() * pool.length)]);
 }
 
 function openRival(r) {
@@ -1180,7 +1258,7 @@ function resolveMove(actor, target, move, b, side) {
     if (fx.grow) { actor.max += fx.grow; actor.fluff += fx.grow; }
     if (fx.skip && Math.random() < fx.skip) target.sleepy = true;
     b.powerUsed[side] = true;
-    note = " " + sp.power + "!";
+    note = " " + sp.power + " with the " + (WEAPON[sp.id] || "soft fist") + "!";
   }
   actor.last = move;
   if (dmg) {
@@ -1213,7 +1291,7 @@ function renderBattle() {
       <div style="flex:1">
         <b>${esc(foe.name)}</b>
         <div class="fluff ${foe.fluff / foe.max < 0.3 ? "low" : ""}"><span style="width:${Math.max(0, foe.fluff / foe.max * 100)}%"></span></div>
-        <small class="muted">${esc(fp.type)} · ${foe.fluff}</small>
+        <small class="muted">${esc(fp.type)} · ${esc(WEAPON[fp.id] || "Soft Fist")} · ${foe.fluff}</small>
       </div>
     </div>
     <div class="log">${esc(battle.log)}</div>
@@ -1231,7 +1309,7 @@ function renderBattle() {
       <button data-m="hug">Hug</button>
       <button data-m="pop">Pop</button>
     </div>
-    <button class="power" data-m="power" ${battle.powerUsed.me ? "disabled" : ""}>${esc(sp.power)}</button>
+    <button class="power" data-m="power" ${battle.powerUsed.me ? "disabled" : ""}>${esc(sp.power)} · ${esc(WEAPON[sp.id] || "Soft Fist")}</button>
     <button class="btn ghost wide" id="run" style="margin-top:8px">Wiggle out</button>
   </div>`;
   ov.querySelectorAll("[data-m]").forEach(b => b.onclick = () => playerMove(b.dataset.m));
