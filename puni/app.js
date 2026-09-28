@@ -619,7 +619,8 @@ function enterMap() {
     <button class="glow-btn" id="glow">Glow</button>
     <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
-    ${S.seenCoach ? "" : `<div class="coach" id="coach"><b>Orbs to catch. Gold Battle to fight.</b><span class="muted">Glow walks you to a mystery orb. Trees and the river block you. Battle starts a demo squish-duel with unique weapons.</span><div style="margin-top:8px"><button class="btn primary" id="okcoach">Got it</button></div></div>`}
+    ${S.pendingDuel ? `<div class="coach" id="duelcoach"><b>${esc(S.pendingDuel.name)} challenged you!</b><span class="muted">Tap Battle to fight their ${esc(species(S.pendingDuel.speciesId).name)}. They keep theirs. You can win an echo.</span><div style="margin-top:8px"><button class="btn gold" id="acceptduel">Fight now</button></div></div>` : ""}
+    ${S.seenCoach ? "" : `<div class="coach" id="coach"><b>Orbs to catch. Gold Battle to fight.</b><span class="muted">Gifts tab sends a friend-duel link. No chat. No logins.</span><div style="margin-top:8px"><button class="btn primary" id="okcoach">Got it</button></div></div>`}
     <nav class="nav" id="nav">
       <button data-tab="map" class="on">🗺️<span>Map</span></button>
       <button data-tab="dex">📒<span>Dex</span></button>
@@ -634,6 +635,8 @@ function enterMap() {
   bindMap();
   paintGiftDot();
   if (!S.seenCoach) $("#okcoach").onclick = () => { S.seenCoach = true; save(); $("#coach").remove(); };
+  const acc = $("#acceptduel");
+  if (acc) acc.onclick = () => { AudioBus.ui(); demoBattle(); };
 }
 
 function mapArt() {
@@ -1112,10 +1115,12 @@ function openGifts() {
     <div class="stamps">${Array.from({length: 7}, (_, i) => `<i class="${i < stamps ? "on" : ""}">${i < stamps ? "★" : "○"}</i>`).join("")}</div>
     <p class="tiny" style="margin-top:0">Seven squeezes fill the week sticker. Kids love a full row.</p>
     ${list}
+    <button class="btn gold wide" id="chal" style="margin-top:8px">Challenge a friend</button>
     <button class="btn primary wide" id="sendm" style="margin-top:8px">Send a mystery squeeze</button>
-    <p class="tiny">Friends open your link and get a squishy. They will not know which.</p>`);
+    <p class="tiny">Friends open your link and fight your lead, or squeeze a mystery gift. No chat. No logins.</p>`);
   $("#sheet").querySelectorAll(".gift").forEach(b => b.onclick = () => openInboxItem(b.dataset.id));
   $("#sendm").onclick = shareMystery;
+  $("#chal").onclick = shareChallenge;
   paintGiftDot();
 }
 async function openInboxItem(id) {
@@ -1155,6 +1160,24 @@ function giftLink(inst) {
 function mysteryLink() {
   const q = new URLSearchParams({ gift: "mystery", from: S.name || "a friend", gid: uid() });
   return basePath() + "?" + q.toString();
+}
+function challengeLink() {
+  const L = lead();
+  if (!L) return null;
+  const q = new URLSearchParams({
+    duel: L.speciesId,
+    cw: L.colorway || "classic",
+    trait: L.trait || "bouncy",
+    from: S.name || "a friend",
+    cid: uid()
+  });
+  if (L.shiny) q.set("shiny", "1");
+  return basePath() + "?" + q.toString();
+}
+function shareChallenge() {
+  if (!lead()) return toast("Catch a squishy first, then challenge.");
+  const link = challengeLink();
+  shareLink(link, (S.name || "A friend") + " challenged you in Puni Go. Fight their " + lead().nickname + ". You both keep your originals.");
 }
 function shareMystery() { shareLink(mysteryLink(), "I squeezed a mystery orb in Puni Go. This one is for you — you won't know what you get."); }
 async function shareLink(url, text) {
@@ -1257,6 +1280,7 @@ function paintWeather() {
 }
 function demoBattle() {
   if (!lead()) return toast("Catch a squishy first, then fight.");
+  if (S.pendingDuel) return openRival(S.pendingDuel);
   const pool = RIVALS;
   openRival(pool[Math.floor(Math.random() * pool.length)]);
 }
@@ -1268,7 +1292,7 @@ function openRival(r) {
   const team = S.squishies.map(inst => `<button class="card ${lead() && lead().uid === inst.uid ? "on" : ""}" data-uid="${inst.uid}" style="${lead() && lead().uid === inst.uid ? "outline:3px solid #ff8fab" : ""}">${squishSVG(species(inst.speciesId), inst, 64)}<small>${esc(inst.nickname)}</small></button>`).join("");
   showSheet(r.name, `
     <p class="muted">${esc(r.line)}</p>
-    <div class="pop">${squishSVG(sp, { colorway: r.colorway }, 140)}</div>
+    <div class="pop">${faceHTML(sp, { colorway: r.colorway, shiny: !!r.shiny, trait: r.trait }, 140)}</div>
     <p>${badge(sp.rarity)} ${typePill(sp.type)} · ${esc(sp.power)}</p>
     <p class="muted">${echo ? "Win and an echo egg forms. Their squishy stays with them. Colorway is still a mystery." : "You already echoed them today. A rematch still pays puffs."}</p>
     <p><b>Your lead</b></p>
@@ -1423,7 +1447,7 @@ async function startBattle(r) {
   if (!L) return toast("You need a squishy first");
   closeSheet();
   mode = "battle";
-  const foeInst = makeInstance(species(r.speciesId), { perfects: 1 }, { colorway: r.colorway, shiny: false });
+  const foeInst = makeInstance(species(r.speciesId), { perfects: 1 }, { colorway: r.colorway, shiny: !!r.shiny, trait: r.trait });
   foeInst.nickname = species(r.speciesId).name;
   battle = {
     rival: r,
@@ -1504,6 +1528,30 @@ function endBattle(win, fled) {
   $("#back", ov).onclick = () => { ov.remove(); battle = null; mode = "map"; enterMap(); };
 }
 
+function claimUrlDuel() {
+  const q = new URLSearchParams(location.search);
+  const duel = q.get("duel");
+  if (!duel) return;
+  const sp = species(duel);
+  if (!sp) return;
+  const from = (q.get("from") || "a friend").slice(0, 16);
+  const traits = ["chubby", "bouncy", "snuggly", "shy", "brave", "sparkly"];
+  const cws = ["classic", "blush", "mint", "golden", "moonkissed"];
+  const key = "friend-" + from.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 12) + "-" + sp.id;
+  S.pendingDuel = {
+    id: key,
+    name: from,
+    line: from + " sent their " + sp.name + " to duel. Win an echo. Theirs stays on their phone.",
+    speciesId: sp.id,
+    colorway: cws.includes(q.get("cw")) ? q.get("cw") : "classic",
+    trait: traits.includes(q.get("trait")) ? q.get("trait") : "bouncy",
+    shiny: q.get("shiny") === "1",
+    friend: true
+  };
+  save();
+  history.replaceState({}, "", location.pathname);
+  setTimeout(() => toast(from + " challenged you. Tap Battle."), 500);
+}
 function claimUrlGift() {
   const q = new URLSearchParams(location.search);
   const gift = q.get("gift");
@@ -1532,6 +1580,7 @@ function claimUrlGift() {
 function boot() {
   S = load();
   dayReset();
+  claimUrlDuel();
   claimUrlGift();
   if (!S.started) showTitle();
   else enterMap();
