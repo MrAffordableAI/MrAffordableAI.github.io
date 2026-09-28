@@ -46,7 +46,12 @@ const SPECIES = [
   { id: "boba", name: "Boba Bear", title: "Sip buddy", type: "Splash", rarity: "Soft Rare", power: "Pearl Pop", blurb: "Keeps chewy pearls in its tummy.", look: "boba", a: "#fff4ea", b: "#f0c9a0", c: "#6b3f2a" },
   { id: "wagashi", name: "Wagashi Wren", title: "Sweet bird", type: "Bloom", rarity: "Sparkle", power: "Petal Song", blurb: "Sings like a snack box opening.", look: "wren", a: "#fff0f5", b: "#ffc2d4", c: "#e07a9a" },
   { id: "ame", name: "Rainbow Ame", title: "Candy cloud", type: "Dream", rarity: "Sparkle", power: "Sugar Prism", blurb: "A hard-candy sky that went soft.", look: "ame", a: "#fff", b: "#cdb4ff", c: "#ff8fab" },
-  { id: "kompeito", name: "Kompeito Kid", title: "Star sugar", type: "Spice", rarity: "Dream", power: "Star Sprinkle", blurb: "Tiny points. Huge personality.", look: "star", a: "#fff7fb", b: "#ffd0e8", c: "#ff5d8f" }
+  { id: "kompeito", name: "Kompeito Kid", title: "Star sugar", type: "Spice", rarity: "Dream", power: "Star Sprinkle", blurb: "Tiny points. Huge personality.", look: "star", a: "#fff7fb", b: "#ffd0e8", c: "#ff5d8f" },
+  { id: "moripix", name: "Mori Pixie", title: "Garden spark", type: "Bloom", rarity: "Everyday", power: "Twinkle Dust", blurb: "A pocket fairy that giggles when squeezed.", look: "pixie", a: "#f4ffe8", b: "#d4f5a8", c: "#7dcea0" },
+  { id: "clover", name: "Clover Gnome", title: "Lucky cap", type: "Fluff", rarity: "Everyday", power: "Lucky Bonk", blurb: "Trips on its own hat. Still wins hugs.", look: "gnome", a: "#fff6ee", b: "#f0c9a0", c: "#c0392b" },
+  { id: "kinoko", name: "Kinoko Gnome", title: "Mushroom hermit", type: "Bloom", rarity: "Soft Rare", power: "Spore Nap", blurb: "Lives under a squishy toadstool.", look: "mushroom", a: "#fff4ea", b: "#ffb3c6", c: "#e74c3c" },
+  { id: "starfairy", name: "Hoshi Fairy", title: "Wish light", type: "Dream", rarity: "Sparkle", power: "Stardust Hug", blurb: "Grants tiny wishes. Mostly snacks.", look: "fairy", a: "#fff7ff", b: "#e0b3ff", c: "#f6c453" },
+  { id: "nijiuni", name: "Niji Uni", title: "Rainbow unicorn", type: "Dream", rarity: "Dream", power: "Prism Gallop", blurb: "A mochi horse with a glowing swirl horn.", look: "uni", a: "#fffdf8", b: "#cdb4ff", c: "#ff8fab" }
 ];
 const POWERS = {
   mochiko: { dmg: 14, shield: true },
@@ -73,7 +78,12 @@ const POWERS = {
   boba: { dmg: 20, heal: 10 },
   wagashi: { dmg: 18, skip: 0.4 },
   ame: { dmg: 22, skip: 0.45 },
-  kompeito: { dmg: 26, heal: 10 }
+  kompeito: { dmg: 26, heal: 10 },
+  moripix: { dmg: 12, dodge: true },
+  clover: { dmg: 14, heal: 12 },
+  kinoko: { dmg: 16, skip: 0.5 },
+  starfairy: { dmg: 20, heal: 14, skip: 0.35 },
+  nijiuni: { dmg: 26, shield: true, heal: 10 }
 };
 const PLACES = [
   { id: "den", name: "Your Den", x: 800, y: 1720, icon: "🏠", kind: "den" },
@@ -91,7 +101,9 @@ const WEAPON = {
   hanabi: "Sparkler Wand", snow: "Powder Puff", kitsune: "Foxfire Tail", jelly: "Jelly Whip",
   tsukimochi: "Moon Pestle", matcha: "Tea Whisk", taiyaki: "Warm Tail", manju: "Bun Fist",
   soda: "Fizz Straw", boba: "Pearl Sling", wagashi: "Song Fan", ame: "Candy Prism",
-  kompeito: "Star Sugar"
+  kompeito: "Star Sugar",
+  moripix: "Dew Wand", clover: "Acorn Hammer", kinoko: "Toadstool Shield",
+  starfairy: "Wish Wand", nijiuni: "Rainbow Horn"
 };
 const BLOCKS = [
   { x: 760, y: 1660, w: 90, h: 80 },
@@ -125,7 +137,9 @@ const RIVALS = [
   { id: "hana", name: "Hana", line: "My galaxy cat only naps for winners.", speciesId: "nebula", colorway: "golden", x: 900, y: 820 },
   { id: "ren", name: "Ren", line: "Onigiri Oni is shy. Win, and you may echo it.", speciesId: "onigiri", colorway: "blush", x: 460, y: 1320 },
   { id: "mio", name: "Mio", line: "The river gave me this one.", speciesId: "pearl", colorway: "mint", x: 1160, y: 1240 },
-  { id: "okami", name: "Okami", line: "Shrine keeper. Bow, then squish.", speciesId: "kitsune", colorway: "golden", x: 500, y: 620, shrine: true }
+  { id: "okami", name: "Okami", line: "Shrine keeper. Bow, then squish.", speciesId: "kitsune", colorway: "golden", x: 500, y: 620, shrine: true },
+  { id: "yuki", name: "Yuki", line: "Niji Uni only gallops for a kind squeeze.", speciesId: "nijiuni", colorway: "moonkissed", x: 720, y: 460 },
+  { id: "sora", name: "Sora", line: "My fairy grants snack wishes if you win.", speciesId: "starfairy", colorway: "golden", x: 300, y: 1100 }
 ];
 
 let gid = 0;
@@ -279,7 +293,9 @@ function rollSpecies(rarity, bias) {
   if (!pool.length) pool = SPECIES.filter(s => s.rarity === "Everyday");
   if (bias === "river" && rarity === "Soft Rare") pool = pool.concat(pool.filter(s => s.id === "pearl"));
   if (bias === "park" && rarity === "Soft Rare") pool = pool.concat(pool.filter(s => s.id === "moss"));
-  if (bias === "park" && rarity === "Everyday") pool = pool.concat(pool.filter(s => s.id === "sakura"));
+  if (bias === "park" && rarity === "Everyday") pool = pool.concat(pool.filter(s => s.id === "sakura" || s.id === "moripix"));
+  if (bias === "park" && rarity === "Soft Rare") pool = pool.concat(pool.filter(s => s.id === "kinoko"));
+  if (bias === "hill" && (rarity === "Dream" || rarity === "Sparkle")) pool = pool.concat(pool.filter(s => s.id === "nijiuni" || s.id === "starfairy"));
   return pool[Math.floor(Math.random() * pool.length)];
 }
 function rollRarity(zone) {
@@ -343,6 +359,10 @@ function squishSVG(sp, inst, size) {
   if (sp.look === "wren") extra += `<path d="M88 58 Q108 50 96 74" fill="${sp.b}"/><path d="M28 56 Q18 44 34 50" fill="${sp.c}"/><path d="M72 78 L80 86 L72 84" fill="#f6c453"/>`;
   if (sp.look === "ame") extra += `<circle cx="32" cy="50" r="6" fill="#ffb7c8"/><circle cx="88" cy="48" r="6" fill="#9be7c4"/><circle cx="60" cy="36" r="5" fill="#cdb4ff"/>`;
   if (sp.look === "star") extra += `<path d="M60 18 L64 32 L78 34 L66 42 L70 56 L60 48 L50 56 L54 42 L42 34 L56 32 Z" fill="#ffd15c"/>`;
+  if (sp.look === "uni") extra += `<path d="M60 16 L65 46 L55 46 Z" fill="#cdb4ff" stroke="#ff8fab" stroke-width="2"/><path d="M26 72 Q10 60 20 90" fill="#cdb4ff"/><path d="M94 72 Q110 60 100 90" fill="#ffd6e8"/>`;
+  if (sp.look === "fairy" || sp.look === "pixie") extra += `<ellipse cx="22" cy="66" rx="16" ry="22" fill="#d4f5a8" opacity="0.8"/><ellipse cx="98" cy="66" rx="16" ry="22" fill="#e0b3ff" opacity="0.8"/><path d="M60 14 L63 24 L74 25 L65 32 L68 42 L60 36 L52 42 L55 32 L46 25 L57 24 Z" fill="#f6c453"/>`;
+  if (sp.look === "gnome") extra += `<path d="M34 50 L60 6 L86 50 Z" fill="#c0392b"/><ellipse cx="60" cy="50" rx="20" ry="7" fill="#e74c3c"/>`;
+  if (sp.look === "mushroom") extra += `<ellipse cx="60" cy="38" rx="36" ry="20" fill="#e74c3c"/><circle cx="44" cy="34" r="6" fill="#fff"/><circle cx="70" cy="30" r="5" fill="#fff"/><circle cx="58" cy="44" r="4" fill="#fff"/>`;
   if (shiny) extra += `<circle cx="24" cy="40" r="2.4" fill="#ffe08a"/><circle cx="96" cy="44" r="2.2" fill="#fff"/><circle cx="88" cy="32" r="1.6" fill="#fff6c8"/>`;
   const overlay = tint ? `<ellipse cx="60" cy="78" rx="40" ry="34" fill="${tint}" opacity="0.28"/>` : "";
   return `<svg class="sq jiggle ${shiny ? "shiny" : ""}" viewBox="0 0 120 130" width="${size}" height="${size}" aria-hidden="true">
