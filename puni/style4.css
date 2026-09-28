@@ -1,0 +1,51 @@
+.den {
+  min-height: 280px;
+  border-radius: 24px;
+  background:
+    radial-gradient(120px 80px at 80% 20%, #fff3c4, transparent 70%),
+    linear-gradient(#ffe8d6, #fff 55%);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.den .mate {
+  position: absolute;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.gift {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border-radius: 18px;
+  padding: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 6px 16px rgba(90, 70, 60, 0.06);
+  border: 0;
+  width: 100%;
+  text-align: left;
+  color: var(--ink);
+  font-weight: 800;
+}
+.cap-card {
+  background: #fff;
+  border-radius: 22px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.burst { position: fixed; inset: 0; pointer-events: none; z-index: 40; }
+.burst i {
+  position: absolute;
+  left: 50%; top: 42%;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  animation: fly 0.7s ease-out forwards;
+  transform: rotate(var(--a)) translateY(0);
+}
+@keyframes fly { to { transform: rotate(var(--a)) translateY(-140px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .orb, .orb-btn, .mini-orb, .shoulder { animation: none; }
+}
