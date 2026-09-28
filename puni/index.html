@@ -17,11 +17,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style1.css">
+<link rel="stylesheet" href="style2.css">
+<link rel="stylesheet" href="style3.css">
+<link rel="stylesheet" href="style4.css">
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="app.js"></script>
+<script>
+(async function () {
+  var files = ["p1.js", "p2.js", "p3.js", "p4.js", "p5.js"];
+  var src = "";
+  for (var i = 0; i < files.length; i++) {
+    var r = await fetch(files[i], { cache: "no-store" });
+    if (!r.ok) throw new Error(files[i]);
+    src += await r.text() + "\n";
+  }
+  var s = document.createElement("script");
+  s.textContent = src;
+  document.body.appendChild(s);
+})().catch(function () {
+  var n = document.createElement("p");
+  n.style.cssText = "font-family:Nunito,sans-serif;padding:28px;color:#5a463c;font-weight:800";
+  n.textContent = "Puni Go is still arriving. Refresh in a minute.";
+  document.body.appendChild(n);
+});
+</script>
 </body>
 </html>
