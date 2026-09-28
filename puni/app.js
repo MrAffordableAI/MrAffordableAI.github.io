@@ -28,7 +28,22 @@ const HEROES = [
   { id: "witch", name: "Hoshi Mage", title: "Galaxy witch" },
   { id: "sakura", name: "Hana Miko", title: "Sakura shrine kid" }
 ];
+const HERO_KIT = {
+  fox: { weapon: "Foxfire Fan", skill: "Dash Pounce", fly: false },
+  fairy: { weapon: "Dew Wand", skill: "Pixie Lift", fly: true },
+  gnome: { weapon: "Acorn Hammer", skill: "Cap Bonk", fly: false },
+  uni: { weapon: "Rainbow Horn", skill: "Prism Gallop", fly: true },
+  witch: { weapon: "Star Bell", skill: "Star Hop", fly: true },
+  sakura: { weapon: "Petal Staff", skill: "Bloom Gust", fly: false }
+};
+const FOES = [
+  { kind: "sour", name: "Sour Blob", emoji: "😈", hp: 2, puff: 8 },
+  { kind: "grump", name: "Grump Cap", emoji: "🍄", hp: 3, puff: 12 },
+  { kind: "ravel", name: "Ravel Imp", emoji: "🌀", hp: 2, puff: 10 }
+];
 function heroOf(id) { return HEROES.find(h => h.id === id) || HEROES[0]; }
+function kit() { return HERO_KIT[S.hero || "fox"] || HERO_KIT.fox; }
+function canFly() { return !!(S.wings || kit().fly); }
 function heroImg(id, size) {
   const art = (typeof PUNI_HERO !== "undefined" && PUNI_HERO[id]) ? PUNI_HERO[id] : "";
   if (art) return `<img class="heroart" alt="" src="${art}" width="${size}" height="${Math.round(size * 1.75)}" style="width:${size}px;height:${Math.round(size * 1.75)}px;object-fit:contain;background:transparent;filter:drop-shadow(0 12px 8px rgba(74,52,46,.3))">`;
@@ -224,7 +239,8 @@ function blankSave() {
     v: 1, name: "", x: 800, y: 1580, puffs: 20, squishies: [], lead: null, orbs: [], inbox: [],
     beaten: {}, echoDay: {}, lastLucky: "", lastMoon: "", lastTown: "", claimed: [],
     squeezesToday: 0, squeezeDate: "", seenCoach: false, muted: false, started: false, hero: "fox",
-    walkPuffs: 0, walkDate: "", pity: 0, didSqueeze: false, wins: 0, catches: 0
+    walkPuffs: 0, walkDate: "", pity: 0, didSqueeze: false, wins: 0, catches: 0,
+    enemies: [], mission: null, wings: false, flyUntil: 0, foesBeat: 0
   };
 }
 function load() {
@@ -483,10 +499,36 @@ async function starterSqueeze() {
   S.started = true;
   S.x = 800; S.y = 1580;
   seedOrbs();
+  seedAdventure();
   await reveal(inst, info, "Your first squishy");
   enterMap();
 }
 
+function seedAdventure() {
+  if (!S.mission) {
+    S.mission = { id: "parkspoil", title: "Chase the spoilers", blurb: "Sour Blobs are stealing picnic puffs in Sakura Park.", need: 3, have: 0, done: false, prize: "Fairy Wings" };
+  }
+  if (!S.enemies || S.enemies.length < 3) seedEnemies();
+}
+function seedEnemies() {
+  S.enemies = S.enemies || [];
+  const spots = [[380,1200],[520,1100],[300,1320],[640,900],[1080,780],[500,620],[900,820],[240,1500]];
+  while (S.enemies.length < 5) {
+    const kind = FOES[Math.floor(Math.random() * FOES.length)];
+    const spot = spots[S.enemies.length % spots.length];
+    S.enemies.push({
+      id: uid(),
+      kind: kind.kind,
+      name: kind.name,
+      emoji: kind.emoji,
+      hp: kind.hp,
+      max: kind.hp,
+      puff: kind.puff,
+      x: spot[0] + Math.random() * 40 - 20,
+      y: spot[1] + Math.random() * 40 - 20
+    });
+  }
+}
 function seedOrbs() {
   S.orbs = [
     { id: uid(), x: 800, y: 1460, rarity: "Everyday", bias: null },
@@ -625,21 +667,26 @@ function enterMap() {
   sheet = null;
   dayReset();
   if (S.started && S.orbs.length < 4) topUpOrbs();
+  seedAdventure();
+  const flying = Date.now() < (S.flyUntil || 0);
   mount(`<div class="screen map" id="map">
     <div class="world" id="world">
       ${mapArt()}
       <div id="pins"></div>
       <div id="orbs"></div>
-      <div class="player" id="player"><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
+      <div id="foes"></div>
+      <div class="player ${flying ? "flying" : ""}" id="player"><div class="wings"></div><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
     </div>
     <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
     <div class="hud">
       <button class="pill" id="about">${esc(S.name || "Trainer")} · ${uniqueCount()}/${SPECIES.length}</button>
+      <button class="pill" id="quest">${S.mission && !S.mission.done ? "Mission " + S.mission.have + "/" + S.mission.need : canFly() ? "Wings ready" : "Mission"}</button>
       <button class="pill" id="puffs">${S.puffs} puffs</button>
     </div>
     <div class="joy" id="joy"><i id="knob"></i></div>
     <div class="wx" id="wx"></div>
     <button class="glow-btn" id="glow">Glow</button>
+    <button class="glow-btn" id="flybtn" style="bottom:calc(var(--nav) + var(--safe-b) + 168px);background:linear-gradient(180deg,#e0b3ff,#7a5cff);color:#fff">${canFly() ? "Fly" : "Wings?"}</button>
     <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
     ${S.pendingDuel ? `<div class="coach" id="duelcoach"><b>${esc(S.pendingDuel.name)} challenged you!</b><span class="muted">Tap Battle to fight their ${esc(species(S.pendingDuel.speciesId).name)}. They keep theirs. You can win an echo.</span><div style="margin-top:8px"><button class="btn gold" id="acceptduel">Fight now</button></div></div>` : ""}
@@ -654,6 +701,7 @@ function enterMap() {
   </div>`);
   drawPins();
   drawOrbs();
+  drawFoes();
   drawShoulder();
   bindMap();
   paintGiftDot();
@@ -746,6 +794,91 @@ function drawOrbs() {
   box.innerHTML = S.orbs.map(o => `<button class="orb ${rclass(o.rarity)}" data-orb="${o.id}" style="left:${o.x}px;top:${o.y}px" aria-label="${esc(GLOW[o.rarity])} orb"><span></span></button>`).join("");
   box.querySelectorAll(".orb").forEach(b => b.onclick = () => walkToOrb(b.dataset.orb));
 }
+function drawFoes() {
+  const box = $("#foes");
+  if (!box) return;
+  box.innerHTML = (S.enemies || []).map(f =>
+    `<button class="foe" data-foe="${f.id}" style="left:${f.x}px;top:${f.y}px"><span>${f.emoji}</span><b>${esc(f.name)}</b></button>`
+  ).join("");
+  box.querySelectorAll("[data-foe]").forEach(b => b.onclick = () => walkToFoe(b.dataset.foe));
+}
+function walkToFoe(id) {
+  const f = (S.enemies || []).find(x => x.id === id);
+  if (!f) return;
+  if (dist(S.x, S.y, f.x, f.y) < 90) hitFoe(id);
+  else follow = { x: f.x, y: f.y, then: () => hitFoe(id) };
+}
+function hitFoe(id) {
+  const f = (S.enemies || []).find(x => x.id === id);
+  if (!f || mode !== "map") return;
+  const k = kit();
+  f.hp -= 1;
+  AudioBus.pop();
+  buzz(16);
+  toast(k.weapon + "! " + f.name + " " + f.hp + "/" + f.max);
+  if (f.hp <= 0) {
+    S.puffs += f.puff;
+    S.foesBeat = (S.foesBeat || 0) + 1;
+    S.enemies = S.enemies.filter(x => x.id !== f.id);
+    if (S.mission && !S.mission.done) {
+      S.mission.have = Math.min(S.mission.need, S.mission.have + 1);
+      if (S.mission.have >= S.mission.need) {
+        S.mission.done = true;
+        S.wings = true;
+        S.puffs += 40;
+        toast("Mission clear! Fairy wings unlocked. Tap Fly.");
+        AudioBus.sparkle();
+        burst(["#cdb4ff", "#fff", "#ffb7c8"]);
+      }
+    }
+    paintPuffs();
+    paintQuest();
+    if (S.enemies.length < 3) seedEnemies();
+  }
+  save();
+  drawFoes();
+}
+function paintQuest() {
+  const el = $("#quest");
+  if (!el) return;
+  if (S.mission && !S.mission.done) el.textContent = "Mission " + S.mission.have + "/" + S.mission.need;
+  else el.textContent = canFly() ? "Wings ready" : "Mission";
+}
+function openQuest() {
+  const m = S.mission || { title: "Rest day", blurb: "Squeeze orbs. Duel friends.", have: 0, need: 0, done: true };
+  const k = kit();
+  showSheet(m.done ? "Wings earned" : "Today's mission", `
+    <p><b>${esc(m.title)}</b></p>
+    <p class="muted">${esc(m.blurb)}</p>
+    <p>${m.done ? "You cleared it. Fairy wings are yours." : "Spoiler foes beaten: " + m.have + " / " + m.need}</p>
+    <p><b>Your look:</b> ${esc(heroOf(S.hero).name)}</p>
+    <p><b>Weapon:</b> ${esc(k.weapon)} · <b>Skill:</b> ${esc(k.skill)}</p>
+    <p class="muted">${canFly() ? "Tap Fly. You lift over the river and trees for a few seconds." : "Clear the mission (or pick the fairy / unicorn / witch) to grow wings."}</p>
+    <button class="btn primary wide" id="hunt">Find a spoiler</button>`);
+  $("#hunt").onclick = () => {
+    closeSheet();
+    const f = (S.enemies || [])[0];
+    if (!f) { seedEnemies(); drawFoes(); }
+    const n = (S.enemies || [])[0];
+    if (n) follow = { x: n.x, y: n.y, then: () => hitFoe(n.id) };
+  };
+}
+function startFly() {
+  if (!canFly()) {
+    toast("Clear the park mission — or pick the fairy, unicorn, or witch.");
+    openQuest();
+    return;
+  }
+  S.flyUntil = Date.now() + 4500;
+  const pl = $("#player");
+  if (pl) pl.classList.add("flying");
+  AudioBus.sparkle();
+  toast(kit().skill + "! Wings out.");
+  setTimeout(() => {
+    const p = $("#player");
+    if (p) p.classList.remove("flying");
+  }, 4500);
+}
 function drawShoulder() {
   const el = $("#shoulder");
   if (!el) return;
@@ -804,6 +937,10 @@ function bindMap() {
   $("#glow").onclick = () => { AudioBus.ui(); followNearest(); };
   const fight = $("#fight");
   if (fight) fight.onclick = () => { AudioBus.ui(); demoBattle(); };
+  const flyb = $("#flybtn");
+  if (flyb) flyb.onclick = () => { AudioBus.ui(); startFly(); };
+  const quest = $("#quest");
+  if (quest) quest.onclick = () => openQuest();
   paintWeather();
   root.querySelectorAll(".bloom").forEach(el => {
     el.onclick = ev => {
@@ -820,7 +957,7 @@ function bindMap() {
   $("#puffs").onclick = () => toast("Puffs open capsules. Earn them by squeezing.");
   $("#nav").querySelectorAll("button").forEach(b => b.onclick = () => openTab(b.dataset.tab));
   $("#map").addEventListener("pointerdown", e => {
-    if (e.target.closest(".hud, .nav, .joy, .glow-btn, .action, .coach, .sheet, .scrim, .pin, .rival, .orb")) return;
+    if (e.target.closest(".hud, .nav, .joy, .glow-btn, .action, .coach, .sheet, .scrim, .pin, .rival, .orb, .foe")) return;
     const world = $("#world").getBoundingClientRect();
     follow = { x: e.clientX - world.left, y: e.clientY - world.top, then: null };
   });
@@ -853,6 +990,10 @@ function nearestAction() {
     const d = dist(S.x, S.y, o.x, o.y);
     if (d < bd) { bd = d; best = { type: "orb", id: o.id, label: "Squeeze the " + GLOW[o.rarity] + " orb" }; }
   }
+  for (const f of (S.enemies || [])) {
+    const d = dist(S.x, S.y, f.x, f.y);
+    if (d < 90 && d < bd + 8) { bd = d; best = { type: "foe", id: f.id, label: kit().weapon + " the " + f.name }; }
+  }
   for (const r of RIVALS) {
     const d = dist(S.x, S.y, r.x, r.y);
     if (d < 100 && d < bd + 10) { bd = d; best = { type: "rival", id: r.id, label: "Squish-duel " + r.name }; }
@@ -872,6 +1013,7 @@ function doAction(a) {
   if (a.type === "orb") openEncounter(a.id);
   if (a.type === "rival") openRival(RIVALS.find(r => r.id === a.id));
   if (a.type === "place") openPlace(PLACES.find(p => p.id === a.id));
+  if (a.type === "foe") hitFoe(a.id);
 }
 
 function cam() {
@@ -900,15 +1042,18 @@ function loop(t) {
   if (keys["a"] || keys["arrowleft"]) mx -= 1;
   if (keys["d"] || keys["arrowright"]) mx += 1;
   const len = Math.hypot(mx, my);
+  const flying = Date.now() < (S.flyUntil || 0);
   function step(nx, ny) {
     const ox = S.x, oy = S.y;
-    if (!blocked(nx, S.y)) S.x = nx;
-    if (!blocked(S.x, ny)) S.y = ny;
+    if (flying || !blocked(nx, S.y)) S.x = nx;
+    if (flying || !blocked(S.x, ny)) S.y = ny;
+    S.x = Math.max(90, Math.min(WORLD.w - 90, S.x));
+    S.y = Math.max(90, Math.min(WORLD.h - 90, S.y));
     if (S.x !== ox || S.y !== oy) walkBuf += Math.hypot(S.x - ox, S.y - oy);
   }
   if (len > 0.12) {
     follow = null;
-    const sp = 170;
+    const sp = flying ? 260 : 170;
     step(S.x + (mx / len) * sp * dt, S.y + (my / len) * sp * dt);
   } else if (follow) {
     const d = dist(S.x, S.y, follow.x, follow.y);
@@ -928,7 +1073,18 @@ function loop(t) {
     }
   }
   const pl = $("#player");
-  if (pl) pl.classList.toggle("walking", !!(len > 0.12 || follow));
+  if (pl) {
+    pl.classList.toggle("walking", !!(len > 0.12 || follow) && !flying);
+    pl.classList.toggle("flying", flying);
+  }
+  if ((S._foeT = (S._foeT || 0) + dt) > 1.1) {
+    S._foeT = 0;
+    (S.enemies || []).forEach(f => {
+      f.x = Math.max(140, Math.min(1460, f.x + (Math.random() * 36 - 18)));
+      f.y = Math.max(180, Math.min(1760, f.y + (Math.random() * 36 - 18)));
+    });
+    if (mode === "map" && !sheet) drawFoes();
+  }
   if (walkBuf > 220) {
     walkBuf = 0;
     if ((S.walkPuffs || 0) < 40) { S.puffs += 1; S.walkPuffs = (S.walkPuffs || 0) + 1; paintPuffs(); }
