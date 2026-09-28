@@ -385,6 +385,14 @@ function squishSVG(sp, inst, size) {
   </svg>`;
 }
 
+function faceHTML(sp, inst, size) {
+  const art = (typeof PUNI_ART !== "undefined" && PUNI_ART[sp.id]) ? PUNI_ART[sp.id] : "";
+  if (art) {
+    return `<img class="faceart" alt="" src="${art}" width="${size}" height="${size}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:${Math.max(18, size / 7)}px;box-shadow:0 10px 18px rgba(74,52,46,.18)">`;
+  }
+  return squishSVG(sp, inst, size);
+}
+
 function mount(html) { root.innerHTML = html; }
 function toastPuffs(n) { if (n) toast("+" + n + " puffs"); }
 
@@ -557,7 +565,7 @@ function reveal(inst, info, title) {
         <i style="position:absolute;inset:-8px;border-radius:50%;border:3px dashed #ff8fab;animation:spin 4s linear infinite"></i>
         <i style="position:absolute;width:14px;height:14px;background:#ffd15c;border-radius:50%;top:8px;left:50%;animation:orbit 1.6s linear infinite"></i>
         <i style="position:absolute;width:10px;height:10px;background:#cdb4ff;border-radius:50%;bottom:12px;left:18px;animation:orbit 2s linear infinite reverse"></i>
-        ${squishSVG(sp, inst, 200)}
+        ${faceHTML(sp, inst, 200)}
       </div>
       <h2 style="margin:8px 0 4px">${esc(inst.nickname)}</h2>
       <div>${badge(sp.rarity)} ${typePill(sp.type)}</div>
@@ -1305,24 +1313,45 @@ function renderBattle() {
   const sp = species(me.inst.speciesId), fp = species(foe.inst.speciesId);
   const ov = $("#battle");
   if (!ov) return;
-  ov.innerHTML = `<div class="battle arena">
-    <div class="fighter foe">
-      <div>${squishSVG(fp, foe.inst, 96)}</div>
-      <div style="flex:1">
-        <b>${esc(foe.name)}</b>
-        <div class="fluff ${foe.fluff / foe.max < 0.3 ? "low" : ""}"><span style="width:${Math.max(0, foe.fluff / foe.max * 100)}%"></span></div>
-        <small class="muted">${esc(fp.type)} · ${esc(WEAPON[fp.id] || "Soft Fist")} · ${foe.fluff}</small>
-      </div>
-    </div>
-    <div class="log">${esc(battle.log)}</div>
-    <div class="fighter">
-      <div>${squishSVG(sp, me.inst, 96)}</div>
-      <div style="flex:1">
+  const hitFoe = battle.fx === "me";
+  const hitMe = battle.fx === "foe";
+  ov.innerHTML = `<style>
+    #battle{background:radial-gradient(120% 80% at 50% 0%,#7a5cff 0%,#2c1e6e 42%,#1b1030 100%)!important;color:#fff}
+    #battle .arena{position:relative;overflow:hidden;border-radius:24px;padding:10px 8px 16px}
+    #battle .stage{display:flex;justify-content:space-between;align-items:flex-end;min-height:210px;padding:8px}
+    #battle .battler{width:46%;text-align:center}
+    #battle .battler img,#battle .battler svg{animation:idleBob 1.1s ease-in-out infinite}
+    #battle .hit img,#battle .hit svg{animation:whack .35s ease}
+    #battle .lunge img,#battle .lunge svg{animation:lunge .35s ease}
+    @keyframes idleBob{50%{transform:translateY(-8px)}}
+    @keyframes whack{0%{transform:translate(0,0) rotate(0)}30%{transform:translate(14px,-6px) rotate(8deg)}100%{transform:translate(0,0)}}
+    @keyframes lunge{0%{transform:translate(0,0)}40%{transform:translate(18px,-10px) scale(1.08)}100%{transform:translate(0,0)}}
+    #battle .slash{position:absolute;left:50%;top:42%;width:90px;height:8px;margin-left:-45px;background:linear-gradient(90deg,transparent,#fff,#ffe08a,transparent);transform:rotate(-18deg) scaleX(0);animation:slash .4s ease}
+    @keyframes slash{50%{transform:rotate(-18deg) scaleX(1)}100%{opacity:0}}
+    #battle .dmg{position:absolute;left:58%;top:28%;font-weight:900;font-size:28px;color:#ffe08a;text-shadow:0 2px 0 #5a2a16;animation:up .7s ease forwards}
+    @keyframes up{to{transform:translateY(-40px);opacity:0}}
+    #battle .fluff{background:rgba(255,255,255,.2)}
+    #battle .fluff span{background:linear-gradient(90deg,#ffb3c6,#ff5d8f)}
+    #battle .log{color:#fff;background:rgba(0,0,0,.28);border-radius:14px;padding:8px 10px}
+    #battle .moves button,#battle .power{box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    #battle b, #battle small{color:#fff}
+    #battle .muted{color:#f3e6dc}
+  </style>
+  <div class="battle arena ${battle.fx ? "shake" : ""}">
+    <div class="stage">
+      <div class="battler ${hitMe ? "hit" : ""} ${battle.fx === "me" ? "lunge" : ""}">${faceHTML(sp, me.inst, 132)}
         <b>${esc(me.name)}</b>
         <div class="fluff ${me.fluff / me.max < 0.3 ? "low" : ""}"><span style="width:${Math.max(0, me.fluff / me.max * 100)}%"></span></div>
-        <small class="muted">${esc(sp.type)} · ${me.fluff}</small>
+        <small class="muted">${esc(WEAPON[sp.id] || "Soft Fist")}</small>
+      </div>
+      <div class="battler foe ${hitFoe ? "hit" : ""}">${faceHTML(fp, foe.inst, 132)}
+        <b>${esc(foe.name)}</b>
+        <div class="fluff ${foe.fluff / foe.max < 0.3 ? "low" : ""}"><span style="width:${Math.max(0, foe.fluff / foe.max * 100)}%"></span></div>
+        <small class="muted">${esc(WEAPON[fp.id] || "Soft Fist")}</small>
       </div>
     </div>
+    ${battle.fx ? `<i class="slash"></i><b class="dmg">${hitFoe || hitMe ? "PUNI!" : ""}</b>` : ""}
+    <div class="log">${esc(battle.log)}</div>
     <div class="moves">
       <button data-m="squish">Squish</button>
       <button data-m="bounce">Bounce</button>
@@ -1366,7 +1395,10 @@ async function playerMove(move) {
     if (battle.over) break;
     if (side === "me") battle.log = resolveMove(battle.me, battle.foe, move, battle, "me");
     else battle.log = resolveMove(battle.foe, battle.me, aiMove(battle), battle, "foe");
+    battle.fx = side;
     renderBattle();
+    AudioBus.pop();
+    buzz(18);
     if (battle.foe.fluff <= 0) { await wait(500); return endBattle(true, false); }
     if (battle.me.fluff <= 0) { await wait(500); return endBattle(false, false); }
     await wait(620);
