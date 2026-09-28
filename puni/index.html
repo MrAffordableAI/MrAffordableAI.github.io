@@ -20,30 +20,33 @@
 .pop{animation:popIn .55s cubic-bezier(.2,1.4,.4,1)}
 .wx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
 .mapart{object-fit:cover}
-.heropick.on{outline:3px solid #ff8fab;border-radius:18px}
 .player{width:86px;height:128px;overflow:visible}
 .player .avatar{background:transparent!important;box-shadow:none!important;width:86px;height:128px;overflow:visible}
 .player .heroart{width:86px!important;height:128px!important;background:transparent!important;object-fit:contain}
-.player .feet{position:absolute;left:50%;bottom:8px;width:40px;height:12px;margin-left:-20px;background:rgba(70,48,36,.32);border-radius:50%;z-index:0}
+.player .feet{position:absolute;left:50%;bottom:8px;width:40px;height:12px;margin-left:-20px;background:rgba(70,48,36,.32);border-radius:50%}
 .player.walking .heroart{animation:stride .28s ease-in-out infinite}
-@keyframes stride{
-  0%{transform:rotate(-8deg) translateY(0) scaleY(1)}
-  25%{transform:rotate(-2deg) translateY(-10px) scaleY(.94)}
-  50%{transform:rotate(8deg) translateY(0) scaleY(1)}
-  75%{transform:rotate(2deg) translateY(-10px) scaleY(.94)}
-}
-.player.walking .feet{animation:shadowstep .28s ease-in-out infinite}
-@keyframes shadowstep{50%{transform:scaleX(.62);opacity:.35}}
-.player.walking .shoulder{animation:armswing .28s ease-in-out infinite}
-@keyframes armswing{50%{transform:translateY(-6px) rotate(-12deg)}}
+@keyframes stride{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg) translateY(-8px)}}
+.player .wings{position:absolute;left:50%;top:28px;width:86px;height:36px;margin-left:-43px;opacity:0;pointer-events:none}
+.player .wings:before,.player .wings:after{content:"";position:absolute;top:0;width:34px;height:28px;border-radius:70% 20%;background:linear-gradient(135deg,#fff,#cdb4ff);opacity:.85}
+.player .wings:before{left:0;transform:rotate(-18deg)}
+.player .wings:after{right:0;transform:rotate(18deg)}
+.player.flying{z-index:6}
+.player.flying .wings{opacity:1;animation:flap .28s ease-in-out infinite}
+.player.flying .heroart{animation:hover .7s ease-in-out infinite}
+.player.flying .feet{opacity:.2;transform:scaleX(.5)}
+@keyframes flap{50%{transform:translateY(-4px) scaleY(.8)}}
+@keyframes hover{50%{transform:translateY(-18px)}}
+.foe{position:absolute;transform:translate(-50%,-50%);border:0;background:transparent;z-index:4;animation:bob 1.2s ease-in-out infinite}
+.foe span{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#cdb4ff 40%,#7a5cff);font-size:26px;box-shadow:0 6px 0 #5a3d9a}
+.foe b{display:block;font-size:10px;background:#fff;border-radius:8px;padding:1px 6px;margin-top:4px}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=walk"></script>
-<script src="heroes.js?v=walk"></script>
-<script src="scenery.js?v=walk"></script>
-<script src="app.js?v=walk"></script>
+<script src="portraits.js?v=quest"></script>
+<script src="heroes.js?v=quest"></script>
+<script src="scenery.js?v=quest"></script>
+<script src="app.js?v=quest"></script>
 </body>
 </html>
