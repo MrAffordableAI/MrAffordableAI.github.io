@@ -553,28 +553,26 @@ async function starterSqueeze() {
 
 function seedAdventure() {
   if (!S.mission) {
-    S.mission = { id: "parkspoil", title: "Chase the spoilers", blurb: "Sour Blobs are stealing picnic puffs in Sakura Park.", need: 3, have: 0, done: false, prize: "Fairy Wings" };
+    S.mission = { id: "parkspoil", title: "Chase the spoilers", blurb: "Sour Blobs are stealing picnic puffs.", need: 3, have: 0, done: false, prize: "Fairy Wings" };
   }
-  if (!S.enemies || S.enemies.length < 3) seedEnemies();
+  if (!S.activeLevel) seedEnemies();
 }
 function seedEnemies() {
-  S.enemies = S.enemies || [];
-  const spots = [[380,1200],[520,1100],[300,1320],[640,900],[1080,780],[500,620],[900,820],[240,1500]];
-  while (S.enemies.length < 5) {
-    const kind = FOES[Math.floor(Math.random() * FOES.length)];
-    const spot = spots[S.enemies.length % spots.length];
-    S.enemies.push({
+  const cx = S.x || 800, cy = S.y || 1580;
+  const spots = [[-100, 10], [95, -50], [-40, 120], [120, 90], [-130, -80], [30, -140]];
+  S.enemies = spots.map((off, i) => {
+    const kind = FOES[i % FOES.length];
+    const hp = kind.hp + (i === 0 ? 1 : 0);
+    return {
       id: uid(),
       kind: kind.kind,
       name: kind.name,
       emoji: kind.emoji,
-      hp: kind.hp,
-      max: kind.hp,
-      puff: kind.puff,
-      x: spot[0] + Math.random() * 40 - 20,
-      y: spot[1] + Math.random() * 40 - 20
-    });
-  }
+      hp, max: hp, puff: kind.puff,
+      x: cx + off[0],
+      y: cy + off[1]
+    };
+  });
 }
 function seedOrbs() {
   S.orbs = [
@@ -721,7 +719,8 @@ function enterMap() {
       ${mapArt()}
       <div id="pins"></div>
       <div id="orbs"></div>
-      <div id="foes"></div>
+      <div id="hazards"></div>
+      <div id="foes" style="position:absolute;inset:0;z-index:9"></div>
       <div class="player ${flying ? "flying" : ""}" id="player"><div class="wings"></div><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
     </div>
     <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
@@ -737,7 +736,7 @@ function enterMap() {
     <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
     ${S.pendingDuel ? `<div class="coach" id="duelcoach"><b>${esc(S.pendingDuel.name)} challenged you!</b><span class="muted">Tap Battle to fight their ${esc(species(S.pendingDuel.speciesId).name)}. They keep theirs. You can win an echo.</span><div style="margin-top:8px"><button class="btn gold" id="acceptduel">Fight now</button></div></div>` : ""}
-    ${S.seenCoach ? "" : `<div class="coach" id="coach"><b>Orbs to catch. Gold Battle to fight.</b><span class="muted">Gifts tab sends a friend-duel link. No chat. No logins.</span><div style="margin-top:8px"><button class="btn primary" id="okcoach">Got it</button></div></div>`}
+    <div class="coach" id="funbanner" style="bottom:calc(var(--nav) + 88px)"><b>Bonk the bouncing pests!</b><span class="muted">Purple meanies steal puffs. Walk into them. Top pill opens 50 levels.</span><div style="margin-top:8px"><button class="btn gold" id="huntnow">Chase one</button> <button class="btn primary" id="okcoach">Got it</button></div></div>
     <nav class="nav" id="nav">
       <button data-tab="map" class="on">🗺️<span>Map</span></button>
       <button data-tab="dex">📒<span>Dex</span></button>
@@ -748,11 +747,19 @@ function enterMap() {
   </div>`);
   drawPins();
   drawOrbs();
+  drawHazards();
   drawFoes();
   drawShoulder();
   bindMap();
   paintGiftDot();
-  if (!S.seenCoach) $("#okcoach").onclick = () => { S.seenCoach = true; save(); $("#coach").remove(); };
+  paintQuest();
+  const hunt = $("#huntnow");
+  if (hunt) hunt.onclick = () => {
+    $("#funbanner") && $("#funbanner").remove();
+    const f = (S.enemies || [])[0];
+    if (f) follow = { x: f.x, y: f.y, then: () => hitFoe(f.id) };
+  };
+  if ($("#okcoach")) $("#okcoach").onclick = () => { S.seenCoach = true; save(); $("#funbanner") && $("#funbanner").remove(); };
   const acc = $("#acceptduel");
   if (acc) acc.onclick = () => { AudioBus.ui(); demoBattle(); };
 }
@@ -841,11 +848,21 @@ function drawOrbs() {
   box.innerHTML = S.orbs.map(o => `<button class="orb ${rclass(o.rarity)}" data-orb="${o.id}" style="left:${o.x}px;top:${o.y}px" aria-label="${esc(GLOW[o.rarity])} orb"><span></span></button>`).join("");
   box.querySelectorAll(".orb").forEach(b => b.onclick = () => walkToOrb(b.dataset.orb));
 }
+function drawHazards() {
+  const box = $("#hazards");
+  if (!box) return;
+  box.innerHTML = BLOCKS.filter(b => b.w < 280).map(b =>
+    `<i style="position:absolute;left:${b.x}px;top:${b.y}px;width:${Math.max(36, b.w)}px;height:${Math.max(28, b.h)}px;border-radius:46%;background:radial-gradient(circle at 30% 30%,#c4a574,#6b4a2e);box-shadow:0 8px 0 rgba(60,40,20,.25);z-index:2;pointer-events:none"></i>`
+  ).join("");
+}
 function drawFoes() {
   const box = $("#foes");
   if (!box) return;
   box.innerHTML = (S.enemies || []).map(f =>
-    `<button class="foe ${f.boss ? "boss" : ""}" data-foe="${f.id}" style="left:${f.x}px;top:${f.y}px"><span>${f.emoji}</span><b>${esc(f.name)}</b></button>`
+    `<button class="foe ${f.boss ? "boss" : ""}" data-foe="${f.id}" style="position:absolute;left:${f.x}px;top:${f.y}px;transform:translate(-50%,-50%);z-index:10;border:0;background:transparent">
+      <span style="display:grid;place-items:center;width:${f.boss ? 70 : 56}px;height:${f.boss ? 70 : 56}px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#e0b3ff 42%,#7a5cff);font-size:${f.boss ? 34 : 28}px;box-shadow:0 6px 0 #4a2d8a">${f.emoji}</span>
+      <b style="display:block;margin-top:4px;background:#fff;border-radius:8px;font-size:11px;padding:2px 6px">${esc(f.name)}</b>
+    </button>`
   ).join("");
   box.querySelectorAll("[data-foe]").forEach(b => b.onclick = () => walkToFoe(b.dataset.foe));
 }
@@ -1098,8 +1115,14 @@ function bindMap() {
 }
 
 function followNearest() {
+  const foes = [...(S.enemies || [])].sort((a, b) => dist(S.x, S.y, a.x, a.y) - dist(S.x, S.y, b.x, b.y));
+  if (foes[0]) {
+    follow = { x: foes[0].x, y: foes[0].y, then: () => hitFoe(foes[0].id) };
+    toast("Chasing " + foes[0].name);
+    return;
+  }
   const o = [...S.orbs].sort((a, b) => dist(S.x, S.y, a.x, a.y) - dist(S.x, S.y, b.x, b.y))[0];
-  if (!o) { toast("The town is quiet. Try the cafe."); return; }
+  if (!o) { toast("The town is quiet. Try Adventure."); return; }
   follow = { x: o.x, y: o.y, then: () => openEncounter(o.id) };
 }
 function walkToOrb(id) {
