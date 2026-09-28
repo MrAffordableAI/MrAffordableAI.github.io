@@ -8,10 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Puni Go — squeeze mystery orbs, collect cute squishies. You will not know what you get.">
-<meta property="og:title" content="Puni Go">
-<meta property="og:description" content="Squeeze first. Ask later.">
-<meta property="og:url" content="https://mraffordableai.github.io/puni/">
 <title>Puni Go</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,11 +27,17 @@
 .pop{animation:popIn .55s cubic-bezier(.2,1.4,.4,1)}
 .player.walking .avatar{animation:walk .28s ease-in-out infinite}
 @keyframes walk{50%{transform:translateY(-6px) rotate(-6deg)}}
+.wx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
+.drop{position:absolute;top:-12px;width:2px;height:16px;background:rgba(255,255,255,.8);border-radius:2px;animation:rain .9s linear infinite}
+@keyframes rain{to{transform:translateY(110vh)}}
+.sunbeam{position:absolute;right:8%;top:6%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,#fff6c8,rgba(255,209,92,.2) 60%,transparent 70%);animation:bob 2.4s ease-in-out infinite}
+.petal{position:absolute;width:10px;height:8px;border-radius:10px 2px;opacity:.8;animation:fall 8s linear infinite}
+@keyframes fall{to{transform:translateY(110vh) rotate(240deg)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="app.js?v=bounce"></script>
+<script src="app.js?v=town2"></script>
 </body>
 </html>
