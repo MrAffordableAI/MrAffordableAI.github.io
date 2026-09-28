@@ -11,11 +11,11 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://d.uguu.se/TOZTABMe.js" -o puni/app.js
-          test "$(wc -c < puni/app.js)" -gt 90000
-          grep -q startFly puni/app.js
+          curl -fsSL "https://n.uguu.se/GaMmkeke.js" -o puni/app.js
+          test "$(wc -c < puni/app.js)" -gt 95000
+          grep -q buildStages puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
           git add puni/app.js
-          git commit -m "Add enemies, mission, hero weapons, fairy fly" || true
+          git commit -m "Add 50 levels, bosses, biomes, prizes" || true
           git push
