@@ -225,6 +225,7 @@ let joy = { on: false, x: 0, y: 0 };
 let keys = {};
 let follow = null;
 let last = 0;
+let shots = [];
 let walkBuf = 0;
 let saveTimer = 0;
 let squeezeTap = null;
@@ -721,7 +722,8 @@ function enterMap() {
       <div id="orbs"></div>
       <div id="hazards"></div>
       <div id="foes" style="position:absolute;inset:0;z-index:9"></div>
-      <div class="player ${flying ? "flying" : ""}" id="player"><div class="wings"></div><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
+      <div id="bolts" style="position:absolute;inset:0;z-index:11;pointer-events:none"></div>
+      <div class="player ${flying ? "flying" : ""}" id="player"><div class="wings"></div><i class="wand" id="wand"></i><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
     </div>
     <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
     <div class="hud">
@@ -731,12 +733,12 @@ function enterMap() {
     </div>
     <div class="joy" id="joy"><i id="knob"></i></div>
     <div class="wx" id="wx"></div>
-    <button class="glow-btn" id="glow">Glow</button>
+    <button class="glow-btn" id="glow">Zap</button>
     <button class="glow-btn" id="flybtn" style="bottom:calc(var(--nav) + var(--safe-b) + 168px);background:linear-gradient(180deg,#e0b3ff,#7a5cff);color:#fff">${canFly() ? "Fly" : "Wings?"}</button>
     <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
     ${S.pendingDuel ? `<div class="coach" id="duelcoach"><b>${esc(S.pendingDuel.name)} challenged you!</b><span class="muted">Tap Battle to fight their ${esc(species(S.pendingDuel.speciesId).name)}. They keep theirs. You can win an echo.</span><div style="margin-top:8px"><button class="btn gold" id="acceptduel">Fight now</button></div></div>` : ""}
-    <div class="coach" id="funbanner" style="bottom:calc(var(--nav) + 88px)"><b>Bonk the bouncing pests!</b><span class="muted">Purple meanies steal puffs. Walk into them. Top pill opens 50 levels.</span><div style="margin-top:8px"><button class="btn gold" id="huntnow">Chase one</button> <button class="btn primary" id="okcoach">Got it</button></div></div>
+    <div class="coach" id="funbanner" style="bottom:calc(var(--nav) + 88px)"><b>Tap Zap — your wand shoots.</b><span class="muted">Pests chase you. Sparkles knock them back. Pop three to feel the prize.</span><div style="margin-top:8px"><button class="btn gold" id="huntnow">Zap one</button> <button class="btn primary" id="okcoach">Got it</button></div></div>
     <nav class="nav" id="nav">
       <button data-tab="map" class="on">🗺️<span>Map</span></button>
       <button data-tab="dex">📒<span>Dex</span></button>
@@ -757,7 +759,7 @@ function enterMap() {
   if (hunt) hunt.onclick = () => {
     $("#funbanner") && $("#funbanner").remove();
     const f = (S.enemies || [])[0];
-    if (f) follow = { x: f.x, y: f.y, then: () => hitFoe(f.id) };
+    if (f) fireWand(f.id);
   };
   if ($("#okcoach")) $("#okcoach").onclick = () => { S.seenCoach = true; save(); $("#funbanner") && $("#funbanner").remove(); };
   const acc = $("#acceptduel");
@@ -855,31 +857,67 @@ function drawHazards() {
     `<i style="position:absolute;left:${b.x}px;top:${b.y}px;width:${Math.max(36, b.w)}px;height:${Math.max(28, b.h)}px;border-radius:46%;background:radial-gradient(circle at 30% 30%,#c4a574,#6b4a2e);box-shadow:0 8px 0 rgba(60,40,20,.25);z-index:2;pointer-events:none"></i>`
   ).join("");
 }
+function foeSVG(f) {
+  const pal = {
+    sour: ["#c9a6ff", "#7a5cff", "#4a2d8a"],
+    grump: ["#ffb199", "#e85d4c", "#7a2d22"],
+    ravel: ["#9fe4ff", "#5dade2", "#1a5276"],
+    drip: ["#b7e4f5", "#5dade2", "#1a5276"],
+    frost: ["#e7f4ff", "#9fd3ff", "#5a8ab8"],
+    boss: ["#ffd15c", "#ff6b9d", "#8e2a4a"]
+  }[f.boss ? "boss" : f.kind] || ["#c9a6ff", "#7a5cff", "#4a2d8a"];
+  const n = f.boss ? 86 : 70;
+  return `<svg class="foeart" width="${n}" height="${n}" viewBox="0 0 80 80">
+    <ellipse cx="40" cy="72" rx="18" ry="5" fill="rgba(70,40,30,.25)"/>
+    <ellipse cx="40" cy="42" rx="28" ry="26" fill="${pal[0]}" stroke="${pal[1]}" stroke-width="3"/>
+    <ellipse cx="28" cy="38" rx="7" ry="9" fill="#fff"/><ellipse cx="52" cy="38" rx="7" ry="9" fill="#fff"/>
+    <circle cx="30" cy="40" r="3.2" fill="#3a2a28"/><circle cx="54" cy="40" r="3.2" fill="#3a2a28"/>
+    <ellipse cx="40" cy="54" rx="8" ry="4" fill="${pal[2]}"/>
+    <circle cx="24" cy="48" r="5" fill="${pal[1]}" opacity=".45"/><circle cx="56" cy="48" r="5" fill="${pal[1]}" opacity=".45"/>
+  </svg>`;
+}
 function drawFoes() {
   const box = $("#foes");
   if (!box) return;
   box.innerHTML = (S.enemies || []).map(f =>
-    `<button class="foe ${f.boss ? "boss" : ""}" data-foe="${f.id}" style="position:absolute;left:${f.x}px;top:${f.y}px;transform:translate(-50%,-50%);z-index:10;border:0;background:transparent">
-      <span style="display:grid;place-items:center;width:${f.boss ? 70 : 56}px;height:${f.boss ? 70 : 56}px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#e0b3ff 42%,#7a5cff);font-size:${f.boss ? 34 : 28}px;box-shadow:0 6px 0 #4a2d8a">${f.emoji}</span>
-      <b style="display:block;margin-top:4px;background:#fff;border-radius:8px;font-size:11px;padding:2px 6px">${esc(f.name)}</b>
+    `<button class="foe ${f.boss ? "boss" : ""}" data-foe="${f.id}" style="position:absolute;left:${f.x}px;top:${f.y}px;transform:translate(-50%,-50%);z-index:10;border:0;background:transparent;animation:bob 0.9s ease-in-out infinite">
+      ${foeSVG(f)}
+      <b style="display:block;margin-top:-4px;background:#fff;border-radius:8px;font-size:10px;padding:1px 6px">${esc(f.name)}</b>
     </button>`
   ).join("");
-  box.querySelectorAll("[data-foe]").forEach(b => b.onclick = () => walkToFoe(b.dataset.foe));
+  box.querySelectorAll("[data-foe]").forEach(b => b.onclick = () => fireWand(b.dataset.foe));
+}
+function nearestFoe() {
+  return [...(S.enemies || [])].sort((a, b) => dist(S.x, S.y, a.x, a.y) - dist(S.x, S.y, b.x, b.y))[0] || null;
+}
+function fireWand(id) {
+  if (mode !== "map") return;
+  if (S._cool && Date.now() < S._cool) return;
+  const f = (id && (S.enemies || []).find(x => x.id === id)) || nearestFoe();
+  if (!f) { toast("No pest in sight"); return; }
+  if (dist(S.x, S.y, f.x, f.y) > 280) { toast("A little closer"); follow = { x: f.x, y: f.y, then: () => fireWand(f.id) }; return; }
+  S._cool = Date.now() + 260;
+  shots.push({ x: S.x + 18, y: S.y - 54, tx: f.x, ty: f.y - 10, tid: f.id, t: 0 });
+  AudioBus.pop();
+  buzz(10);
+  const wand = $("#wand");
+  if (wand) { wand.classList.remove("cast"); void wand.offsetWidth; wand.classList.add("cast"); }
 }
 function walkToFoe(id) {
-  const f = (S.enemies || []).find(x => x.id === id);
-  if (!f) return;
-  if (dist(S.x, S.y, f.x, f.y) < 90) hitFoe(id);
-  else follow = { x: f.x, y: f.y, then: () => hitFoe(id) };
+  fireWand(id);
 }
 function hitFoe(id) {
   const f = (S.enemies || []).find(x => x.id === id);
   if (!f || mode !== "map") return;
   const k = kit();
   f.hp -= 1;
+  const ang = Math.atan2(f.y - S.y, f.x - S.x);
+  f.x += Math.cos(ang) * 38;
+  f.y += Math.sin(ang) * 38;
   AudioBus.pop();
   buzz(16);
-  toast(k.weapon + "! " + f.name + " " + f.hp + "/" + f.max);
+  toast(k.weapon + "! " + f.hp + "/" + f.max);
+  burst(["#fff", "#cdb4ff", "#ffd15c"]);
   if (f.hp <= 0) {
     S.puffs += f.puff;
     S.foesBeat = (S.foesBeat || 0) + 1;
@@ -1085,7 +1123,7 @@ function bindMap() {
   const end = () => { joy.on = false; joy.x = 0; joy.y = 0; knob.style.left = "30px"; knob.style.top = "30px"; };
   joyEl.addEventListener("pointerup", end);
   joyEl.addEventListener("pointercancel", end);
-  $("#glow").onclick = () => { AudioBus.ui(); followNearest(); };
+  $("#glow").onclick = () => { AudioBus.ui(); fireWand(); };
   const fight = $("#fight");
   if (fight) fight.onclick = () => { AudioBus.ui(); demoBattle(); };
   const flyb = $("#flybtn");
@@ -1149,7 +1187,7 @@ function nearestAction() {
   }
   for (const f of (S.enemies || [])) {
     const d = dist(S.x, S.y, f.x, f.y);
-    if (d < 90 && d < bd + 8) { bd = d; best = { type: "foe", id: f.id, label: kit().weapon + " the " + f.name }; }
+    if (d < 240 && d < bd + 80) { bd = d; best = { type: "foe", id: f.id, label: "Zap " + f.name }; }
   }
   for (const r of RIVALS) {
     const d = dist(S.x, S.y, r.x, r.y);
@@ -1170,7 +1208,7 @@ function doAction(a) {
   if (a.type === "orb") openEncounter(a.id);
   if (a.type === "rival") openRival(RIVALS.find(r => r.id === a.id));
   if (a.type === "place") openPlace(PLACES.find(p => p.id === a.id));
-  if (a.type === "foe") hitFoe(a.id);
+  if (a.type === "foe") fireWand(a.id);
 }
 
 function cam() {
@@ -1180,6 +1218,12 @@ function cam() {
   world.style.transform = `translate(${r.width / 2 - S.x}px, ${r.height / 2 - S.y - 30}px)`;
   const player = $("#player");
   if (player) { player.style.left = S.x + "px"; player.style.top = S.y + "px"; }
+  const wand = $("#wand");
+  const nf = nearestFoe();
+  if (wand && nf) {
+    const deg = Math.atan2(nf.y - S.y, nf.x - S.x) * 180 / Math.PI;
+    wand.style.transform = `rotate(${deg}deg)`;
+  }
   const act = nearestAction();
   const btn = $("#action");
   if (btn) {
@@ -1234,13 +1278,31 @@ function loop(t) {
     pl.classList.toggle("walking", !!(len > 0.12 || follow) && !flying);
     pl.classList.toggle("flying", flying);
   }
-  if ((S._foeT = (S._foeT || 0) + dt) > 1.1) {
-    S._foeT = 0;
-    (S.enemies || []).forEach(f => {
-      f.x = Math.max(140, Math.min(1460, f.x + (Math.random() * 36 - 18)));
-      f.y = Math.max(180, Math.min(1760, f.y + (Math.random() * 36 - 18)));
-    });
-    if (mode === "map" && !sheet) drawFoes();
+  (S.enemies || []).forEach(f => {
+    const d = dist(S.x, S.y, f.x, f.y) || 1;
+    if (d < 500) {
+      const chase = f.boss ? 55 : 38;
+      f.x += ((S.x - f.x) / d) * chase * dt + Math.sin((t / 180) + f.x) * 12 * dt;
+      f.y += ((S.y - f.y) / d) * chase * dt + Math.cos((t / 200) + f.y) * 12 * dt;
+    }
+    f.x = Math.max(120, Math.min(1480, f.x));
+    f.y = Math.max(140, Math.min(1780, f.y));
+    const el = document.querySelector(`[data-foe="${f.id}"]`);
+    if (el) { el.style.left = f.x + "px"; el.style.top = f.y + "px"; }
+  });
+  shots = shots.filter(s => {
+    s.t += dt;
+    s.x += (s.tx - s.x) * Math.min(1, 10 * dt);
+    s.y += (s.ty - s.y) * Math.min(1, 10 * dt);
+    if (s.t > 0.55 || dist(s.x, s.y, s.tx, s.ty) < 22) {
+      if ((S.enemies || []).some(x => x.id === s.tid)) hitFoe(s.tid);
+      return false;
+    }
+    return true;
+  });
+  const bolts = $("#bolts");
+  if (bolts) {
+    bolts.innerHTML = shots.map(s => `<i style="position:absolute;left:${s.x}px;top:${s.y}px;width:18px;height:18px;margin:-9px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#ffd15c 40%,#ff6b9d);box-shadow:0 0 16px #ffd15c;z-index:12"></i>`).join("");
   }
   if (walkBuf > 220) {
     walkBuf = 0;
