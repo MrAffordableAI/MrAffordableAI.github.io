@@ -3,15 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FF8FAB">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Puni Go</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style1.css">
 <link rel="stylesheet" href="style2.css">
@@ -21,23 +17,21 @@
 .sq{overflow:visible}
 .orb,.orb-btn,.mini-orb{animation:bob 1.6s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-10px)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes orbit{from{transform:rotate(0deg) translateX(96px)}to{transform:rotate(360deg) translateX(96px)}}
 @keyframes popIn{0%{transform:scale(.15)}60%{transform:scale(1.16)}100%{transform:scale(1)}}
 .pop{animation:popIn .55s cubic-bezier(.2,1.4,.4,1)}
 .player.walking .avatar{animation:walk .28s ease-in-out infinite}
 @keyframes walk{50%{transform:translateY(-6px) rotate(-6deg)}}
 .wx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
-.drop{position:absolute;top:-12px;width:2px;height:16px;background:rgba(255,255,255,.8);border-radius:2px;animation:rain .9s linear infinite}
+.drop{position:absolute;top:-12px;width:2px;height:16px;background:rgba(255,255,255,.8);animation:rain .9s linear infinite}
 @keyframes rain{to{transform:translateY(110vh)}}
-.sunbeam{position:absolute;right:8%;top:6%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,#fff6c8,rgba(255,209,92,.2) 60%,transparent 70%);animation:bob 2.4s ease-in-out infinite}
-.petal{position:absolute;width:10px;height:8px;border-radius:10px 2px;opacity:.8;animation:fall 8s linear infinite}
+.sunbeam{position:absolute;right:8%;top:6%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,#fff6c8,transparent 70%)}
+.petal{position:absolute;width:10px;height:8px;border-radius:10px 2px;animation:fall 8s linear infinite}
 @keyframes fall{to{transform:translateY(110vh) rotate(240deg)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="app.js?v=town2"></script>
+<script src="app.js?v=myth"></script>
 </body>
 </html>
