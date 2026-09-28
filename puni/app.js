@@ -457,14 +457,26 @@ function reveal(inst, info, title) {
       <div>${badge(sp.rarity)} ${typePill(sp.type)}</div>
       <p class="muted" style="margin:8px 0">${esc(sp.title)} · ${esc(COLOR_NAME[inst.colorway])} · ${esc(inst.trait)}${inst.shiny ? " · shiny squeeze" : ""}</p>
       <p style="font-weight:800;margin:0 0 12px">${esc(sp.blurb)} Power: ${esc(sp.power)}.</p>
-      <p class="tiny" style="margin-top:0">+${info.puff} puffs</p>
+      <p class="tiny" style="margin-top:0">+${info.puff} puffs</p><p class="hint">Tap anywhere — the town opens next</p>
       <div class="row" style="width:min(420px,100%)">
         <button class="btn ghost" id="send">Send a mystery</button>
-        <button class="btn primary" id="keep">Keep squeezing</button>
+        <button class="btn primary" id="keep">Play the map</button>
       </div>`;
     root.appendChild(ov);
-    $("#send", ov).onclick = () => shareMystery();
-    $("#keep", ov).onclick = () => { ov.remove(); resolve(); };
+    function goPlay() {
+      if (!ov.parentNode) return;
+      ov.remove();
+      resolve();
+    }
+    const send = $("#send", ov);
+    const keep = $("#keep", ov);
+    if (send) send.addEventListener("pointerup", e => { e.preventDefault(); e.stopPropagation(); shareMystery(); });
+    if (keep) keep.addEventListener("pointerup", e => { e.preventDefault(); e.stopPropagation(); goPlay(); });
+    ov.addEventListener("pointerup", e => {
+      if (e.target && e.target.closest && e.target.closest("#send")) return;
+      goPlay();
+    });
+    setTimeout(goPlay, 1600);
   });
 }
 function badge(r) { return `<span class="rarity ${RBADGE[r] || ""}">${esc(r)}</span>`; }
