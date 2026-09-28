@@ -20,6 +20,20 @@ const TRAIT_TEXT = {
   sparkly: "Sometimes pops a crit."
 };
 const COLOR_NAME = { classic: "Classic", blush: "Blush", mint: "Mint", golden: "Golden", moonkissed: "Moonkissed" };
+const HEROES = [
+  { id: "fox", name: "Momo Kitsune", title: "Fox-eared wanderer" },
+  { id: "fairy", name: "Sora Pixie", title: "Mint fairy kid" },
+  { id: "gnome", name: "Kin Cap", title: "Mushroom gnome" },
+  { id: "uni", name: "Niji Kid", title: "Unicorn adventurer" },
+  { id: "witch", name: "Hoshi Mage", title: "Galaxy witch" },
+  { id: "sakura", name: "Hana Miko", title: "Sakura shrine kid" }
+];
+function heroOf(id) { return HEROES.find(h => h.id === id) || HEROES[0]; }
+function heroImg(id, size) {
+  const art = (typeof PUNI_HERO !== "undefined" && PUNI_HERO[id]) ? PUNI_HERO[id] : "";
+  if (art) return `<img class="heroart" alt="" src="${art}" width="${size}" height="${Math.round(size * 1.35)}" style="width:${size}px;height:${Math.round(size * 1.35)}px;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(74,52,46,.22))">`;
+  return `<div class="avatar"><div class="hair"></div><div class="face"></div><div class="body"></div></div>`;
+}
 
 const SPECIES = [
   { id: "mochiko", name: "Mochiko", title: "Rice-cake fox", type: "Fluff", rarity: "Everyday", power: "Bounce Barrier", blurb: "Squishes its own cheek when it is happy.", look: "fox", a: "#fff6ee", b: "#ffd6e0", c: "#ff8fab" },
@@ -209,7 +223,7 @@ function blankSave() {
   return {
     v: 1, name: "", x: 800, y: 1580, puffs: 20, squishies: [], lead: null, orbs: [], inbox: [],
     beaten: {}, echoDay: {}, lastLucky: "", lastMoon: "", lastTown: "", claimed: [],
-    squeezesToday: 0, squeezeDate: "", seenCoach: false, muted: false, started: false,
+    squeezesToday: 0, squeezeDate: "", seenCoach: false, muted: false, started: false, hero: "fox",
     walkPuffs: 0, walkDate: "", pity: 0, didSqueeze: false, wins: 0, catches: 0
   };
 }
@@ -406,6 +420,7 @@ function showTitle() {
       <i class="spark" style="left:30%;top:70%;animation-delay:.8s"></i>
     </div>
     <div class="kid-chip">colorful · cute · collect them all</div>
+    ${S.hero ? `<div class="pop">${heroImg(S.hero, 120)}</div>` : ""}
     <h1 class="wordmark">Puni <span>Go</span></h1>
     <p class="tag">Squeeze first. Ask later.</p>
     <button class="orb-btn" id="start" aria-label="Squeeze to begin"><i></i></button>
@@ -420,18 +435,26 @@ function showTitle() {
 
 function askName() {
   mode = "name";
+  const picks = HEROES.map(h => `<button class="card heropick ${S.hero === h.id ? "on" : ""}" data-hero="${h.id}">${heroImg(h.id, 92)}<small>${esc(h.name)}</small></button>`).join("");
   mount(`<div class="screen title"><div class="panel">
-    <h2>What do they call you?</h2>
-    <p>Trainers get a name. Squishies get a surprise.</p>
-    <input class="field" id="name" maxlength="16" value="" placeholder="Your name">
+    <h2>Who walks the town?</h2>
+    <p>Pick a kawaii look. You can change it later in your den.</p>
+    <div class="grid">${picks}</div>
+    <input class="field" id="name" maxlength="16" value="${esc(S.name || "")}" placeholder="Your name">
     <button class="btn primary wide" id="go">That's me</button>
   </div></div>`);
   const input = $("#name");
-  input.focus();
+  root.querySelectorAll("[data-hero]").forEach(b => b.onclick = () => {
+    S.hero = b.dataset.hero;
+    root.querySelectorAll("[data-hero]").forEach(x => x.classList.toggle("on", x === b));
+    AudioBus.ui();
+  });
   $("#go").onclick = () => {
-    S.name = (input.value || "Trainer").trim().slice(0, 16);
+    S.name = (input.value || heroOf(S.hero).name.split(" ")[0]).trim().slice(0, 16);
+    S.hero = S.hero || "fox";
     save();
     AudioBus.ui();
+    if (S.started) { enterMap(); return; }
     showStarter();
   };
 }
@@ -607,7 +630,7 @@ function enterMap() {
       ${mapArt()}
       <div id="pins"></div>
       <div id="orbs"></div>
-      <div class="player" id="player"><div class="shoulder" id="shoulder"></div><div class="avatar"><div class="hair"></div><div class="face"></div><div class="body"></div></div></div>
+      <div class="player" id="player"><div class="shoulder" id="shoulder"></div><div class="avatar">${heroImg(S.hero || "fox", 64)}</div></div>
     </div>
     <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
     <div class="hud">
@@ -1198,7 +1221,8 @@ function openDen() {
   showSheet("Your Den", `
     <div class="den" id="denroom">${mates.map((inst, i) => `<button class="mate" data-uid="${inst.uid}" style="left:${12 + (i % 4) * 24}%;top:${28 + Math.floor(i / 4) * 38}%">${squishSVG(species(inst.speciesId), inst, 78)}</button>`).join("")}</div>
     <p class="muted">${esc(decor)} Town squeezes today: ${townCount().toLocaleString()}.</p>
-    <p class="tiny">Tap a squishy. Bond goes up. Sometimes a puff pops out.</p>`);
+    <p class="tiny">Tap a squishy. Bond goes up. Sometimes a puff pops out.</p>
+    <button class="btn ghost wide" id="chhero" style="margin-top:8px">Change my look</button>`);
   $("#sheet").querySelectorAll(".mate").forEach(b => b.onclick = () => {
     const inst = S.squishies.find(s => s.uid === b.dataset.uid);
     if (!inst) return;
@@ -1210,6 +1234,7 @@ function openDen() {
     if (inst.bond % 5 === 0) { S.puffs += 2; toast("+2 puffs"); paintPuffs(); }
     save();
   });
+  $("#chhero").onclick = () => { closeSheet(); askName(); };
 }
 function openPlace(p) {
   if (p.kind === "den") return openDen();
