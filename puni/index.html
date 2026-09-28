@@ -21,25 +21,21 @@
 .player.walking .avatar{animation:walk .28s ease-in-out infinite}
 @keyframes walk{50%{transform:translateY(-6px) rotate(-6deg)}}
 .wx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
-.faceart{animation:idleBob 1.2s ease-in-out infinite}
+.faceart,.heroart{animation:idleBob 1.2s ease-in-out infinite}
 @keyframes idleBob{50%{transform:translateY(-7px)}}
 .mapart{object-fit:cover}
-.life{position:absolute;inset:0;width:1600px;height:1900px;pointer-events:none;z-index:3}
-.fly{position:absolute;width:7px;height:7px;border-radius:50%;background:#fff6c8;box-shadow:0 0 10px #ffe08a;animation:firefly 3.4s ease-in-out infinite}
-@keyframes firefly{50%{transform:translate(18px,-22px);opacity:.25}}
-.lantern{position:absolute;width:16px;height:22px;border-radius:6px 6px 8px 8px;background:#ffb347;box-shadow:0 0 18px #ff8fab;animation:glowpulse 1.6s ease-in-out infinite}
-@keyframes glowpulse{50%{box-shadow:0 0 28px #ffe08a;transform:scale(1.12)}}
-.koi{position:absolute;width:28px;height:12px;border-radius:20px;background:linear-gradient(90deg,#ff8fab,#fff);animation:swim 5s ease-in-out infinite}
-@keyframes swim{50%{transform:translate(40px,18px) rotate(12deg)}}
-.bloom{position:absolute;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#ff8fab 55%,#ff5d8f);pointer-events:auto;animation:bloom 1.8s ease-in-out infinite}
-@keyframes bloom{50%{transform:scale(1.25)}}
+.heropick.on{outline:3px solid #ff8fab;border-radius:18px}
+.player{width:78px;height:104px}
+.player .avatar{background:transparent;box-shadow:none;width:78px;height:104px}
+.player .heroart{width:78px!important;height:104px!important}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=friend"></script>
-<script src="scenery.js?v=friend"></script>
-<script src="app.js?v=friend"></script>
+<script src="portraits.js?v=hero"></script>
+<script src="heroes.js?v=hero"></script>
+<script src="scenery.js?v=hero"></script>
+<script src="app.js?v=hero"></script>
 </body>
 </html>
