@@ -38,7 +38,15 @@ const SPECIES = [
   { id: "snow", name: "Snow Bun", title: "Powder puff", type: "Fluff", rarity: "Sparkle", power: "Powder Puff", blurb: "Cold on the outside, hug on the inside.", look: "snow", a: "#ffffff", b: "#e7f4ff", c: "#9fd3ff" },
   { id: "kitsune", name: "Kitsune Puff", title: "Shrine fox", type: "Fluff", rarity: "Dream", power: "Foxfire Hug", blurb: "Gold ears. A very soft guardian.", look: "kitsune", a: "#fffaf0", b: "#ffe8b8", c: "#e0a106" },
   { id: "jelly", name: "Jelly Dragon", title: "Wiggle wyrm", type: "Splash", rarity: "Dream", power: "Jelly Wave", blurb: "A dragon that jiggles instead of roaring.", look: "jelly", a: "#e8fff8", b: "#9be7c4", c: "#2f8f62" },
-  { id: "tsukimochi", name: "Tsukimochi", title: "Moon rabbit", type: "Dream", rarity: "Moon", power: "Full Moon Squeeze", blurb: "Only the moonlit orbs know this one.", look: "moon", a: "#fffdf6", b: "#fff3c4", c: "#f6c453" }
+  { id: "tsukimochi", name: "Tsukimochi", title: "Moon rabbit", type: "Dream", rarity: "Moon", power: "Full Moon Squeeze", blurb: "Only the moonlit orbs know this one.", look: "moon", a: "#fffdf6", b: "#fff3c4", c: "#f6c453" },
+  { id: "matcha", name: "Matcha Mochi", title: "Tea blob", type: "Bloom", rarity: "Everyday", power: "Calm Whisk", blurb: "Smells like a warm cafe.", look: "matcha", a: "#f3ffe8", b: "#b7e07a", c: "#5f8f2d" },
+  { id: "taiyaki", name: "Taiyaki Pup", title: "Pastry pup", type: "Spice", rarity: "Everyday", power: "Warm Filling", blurb: "A fish bun that learned to wag.", look: "taiyaki", a: "#fff1dc", b: "#f0b27a", c: "#c46a2d" },
+  { id: "manju", name: "Manju Mouse", title: "Tiny bun", type: "Fluff", rarity: "Everyday", power: "Nibble Hug", blurb: "Fits in a pocket. Barely.", look: "manju", a: "#fff8ef", b: "#f5d0b0", c: "#d9896a" },
+  { id: "soda", name: "Melon Soda", title: "Fizz drop", type: "Splash", rarity: "Soft Rare", power: "Bubble Rush", blurb: "Pops into harmless green fizz.", look: "soda", a: "#e9fff4", b: "#7ee0b8", c: "#2f8f62" },
+  { id: "boba", name: "Boba Bear", title: "Sip buddy", type: "Splash", rarity: "Soft Rare", power: "Pearl Pop", blurb: "Keeps chewy pearls in its tummy.", look: "boba", a: "#fff4ea", b: "#f0c9a0", c: "#6b3f2a" },
+  { id: "wagashi", name: "Wagashi Wren", title: "Sweet bird", type: "Bloom", rarity: "Sparkle", power: "Petal Song", blurb: "Sings like a snack box opening.", look: "wren", a: "#fff0f5", b: "#ffc2d4", c: "#e07a9a" },
+  { id: "ame", name: "Rainbow Ame", title: "Candy cloud", type: "Dream", rarity: "Sparkle", power: "Sugar Prism", blurb: "A hard-candy sky that went soft.", look: "ame", a: "#fff", b: "#cdb4ff", c: "#ff8fab" },
+  { id: "kompeito", name: "Kompeito Kid", title: "Star sugar", type: "Spice", rarity: "Dream", power: "Star Sprinkle", blurb: "Tiny points. Huge personality.", look: "star", a: "#fff7fb", b: "#ffd0e8", c: "#ff5d8f" }
 ];
 const POWERS = {
   mochiko: { dmg: 14, shield: true },
@@ -57,7 +65,15 @@ const POWERS = {
   snow: { dmg: 14, shield: true, heal: 8 },
   kitsune: { dmg: 22, heal: 12 },
   jelly: { dmg: 36 },
-  tsukimochi: { dmg: 28, heal: 22, shield: true }
+  tsukimochi: { dmg: 28, heal: 22, shield: true },
+  matcha: { dmg: 12, heal: 16 },
+  taiyaki: { dmg: 18, heal: 10 },
+  manju: { dmg: 10, heal: 18 },
+  soda: { dmg: 16, dodge: true },
+  boba: { dmg: 20, heal: 10 },
+  wagashi: { dmg: 18, skip: 0.4 },
+  ame: { dmg: 22, skip: 0.45 },
+  kompeito: { dmg: 26, heal: 10 }
 };
 const PLACES = [
   { id: "den", name: "Your Den", x: 800, y: 1720, icon: "🏠", kind: "den" },
@@ -281,13 +297,33 @@ function squishSVG(sp, inst, size) {
   if (sp.look === "hanabi") extra += `<path d="M60 30 L62 18 L64 30 L76 32 L64 34 L62 46 L60 34 L48 32 Z" fill="#ff5d8f"/>`;
   if (sp.look === "snow") extra += `<circle cx="40" cy="36" r="3" fill="#fff"/><circle cx="78" cy="32" r="2.4" fill="#fff"/>`;
   if (sp.look === "jelly") extra += `<path d="M18 70 Q8 50 22 46" stroke="#2f8f62" stroke-width="4" fill="none"/><path d="M102 70 Q112 50 98 46" stroke="#2f8f62" stroke-width="4" fill="none"/>`;
-  if (shiny) extra += `<circle cx="24" cy="40" r="2" fill="#ffe08a"/><circle cx="96" cy="44" r="2" fill="#fff"/>`;
+  if (sp.look === "matcha") extra += `<ellipse cx="60" cy="40" rx="16" ry="8" fill="#5f8f2d" opacity="0.35"/><path d="M78 34 Q88 22 84 40" stroke="#5f8f2d" stroke-width="3" fill="none"/>`;
+  if (sp.look === "taiyaki") extra += `<ellipse cx="28" cy="74" rx="12" ry="8" fill="${sp.b}"/><ellipse cx="92" cy="74" rx="12" ry="8" fill="${sp.b}"/><circle cx="22" cy="74" r="3" fill="${sp.c}"/><path d="M60 96 Q68 108 76 98" stroke="${sp.c}" stroke-width="3" fill="none"/>`;
+  if (sp.look === "manju") extra += `<ellipse cx="60" cy="48" rx="18" ry="10" fill="#fff" opacity="0.5"/><circle cx="40" cy="92" r="5" fill="#fff"/>`;
+  if (sp.look === "soda") extra += `<circle cx="44" cy="48" r="4" fill="#fff" opacity="0.8"/><circle cx="70" cy="42" r="3" fill="#fff" opacity="0.7"/><circle cx="86" cy="58" r="2.4" fill="#fff"/>`;
+  if (sp.look === "boba") extra += `<circle cx="48" cy="92" r="5" fill="#6b3f2a"/><circle cx="62" cy="96" r="5" fill="#6b3f2a"/><circle cx="74" cy="90" r="4.5" fill="#4a2818"/><rect x="56" y="18" width="8" height="16" rx="3" fill="#ff8fab"/>`;
+  if (sp.look === "wren") extra += `<path d="M88 58 Q108 50 96 74" fill="${sp.b}"/><path d="M28 56 Q18 44 34 50" fill="${sp.c}"/><path d="M72 78 L80 86 L72 84" fill="#f6c453"/>`;
+  if (sp.look === "ame") extra += `<circle cx="32" cy="50" r="6" fill="#ffb7c8"/><circle cx="88" cy="48" r="6" fill="#9be7c4"/><circle cx="60" cy="36" r="5" fill="#cdb4ff"/>`;
+  if (sp.look === "star") extra += `<path d="M60 18 L64 32 L78 34 L66 42 L70 56 L60 48 L50 56 L54 42 L42 34 L56 32 Z" fill="#ffd15c"/>`;
+  if (shiny) extra += `<circle cx="24" cy="40" r="2.4" fill="#ffe08a"/><circle cx="96" cy="44" r="2.2" fill="#fff"/><circle cx="88" cy="32" r="1.6" fill="#fff6c8"/>`;
   const overlay = tint ? `<ellipse cx="60" cy="78" rx="40" ry="34" fill="${tint}" opacity="0.28"/>` : "";
-  return `<svg class="sq ${shiny ? "shiny" : ""}" viewBox="0 0 120 130" width="${size}" height="${size}" aria-hidden="true">
+  return `<svg class="sq jiggle ${shiny ? "shiny" : ""}" viewBox="0 0 120 130" width="${size}" height="${size}" aria-hidden="true">
     <defs><radialGradient id="${id}" cx="40%" cy="35%"><stop offset="0" stop-color="#fff"/><stop offset="0.35" stop-color="${sp.a}"/><stop offset="1" stop-color="${sp.b}"/></radialGradient></defs>
-    <ellipse cx="60" cy="112" rx="28" ry="6" fill="rgba(90,70,60,0.12)"/>
-    <ellipse cx="60" cy="74" rx="42" ry="38" fill="url(#${id})"/>
-    ${overlay}${extra}${eyes}${blush}${mouth}
+    <ellipse cx="60" cy="118" rx="26" ry="5" fill="rgba(90,70,60,0.16)">
+      <animate attributeName="rx" values="26;20;26" dur="0.9s" repeatCount="indefinite"/>
+    </ellipse>
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0; 0 -7; 0 0" dur="0.9s" repeatCount="indefinite"/>
+      <g>
+        <animateTransform attributeName="transform" type="scale" additive="sum" values="1 1; 1.1 0.88; 1 1" dur="0.9s" repeatCount="indefinite"/>
+        <ellipse cx="60" cy="74" rx="44" ry="40" fill="url(#${id})"/>
+        <ellipse cx="44" cy="58" rx="14" ry="8" fill="#fff" opacity="0.35"/>
+        ${overlay}${extra}${eyes}${blush}${mouth}
+        <circle cx="92" cy="40" r="3" fill="#fff" opacity="0.9">
+          <animate attributeName="opacity" values="0.2;1;0.2" dur="1.1s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </g>
   </svg>`;
 }
 
@@ -298,12 +334,17 @@ function showTitle() {
   mode = "title";
   const cont = S.started;
   mount(`<div class="screen title">
-    <div class="tag">a soft mystery</div>
+    <div class="title-sky">
+      <div class="float-orb"></div><div class="float-orb"></div><div class="float-orb"></div><div class="float-orb"></div>
+      <i class="spark" style="left:20%;top:24%"></i><i class="spark" style="left:78%;top:30%;animation-delay:.4s"></i>
+      <i class="spark" style="left:30%;top:70%;animation-delay:.8s"></i>
+    </div>
+    <div class="kid-chip">colorful · cute · collect them all</div>
     <h1 class="wordmark">Puni <span>Go</span></h1>
     <p class="tag">Squeeze first. Ask later.</p>
     <button class="orb-btn" id="start" aria-label="Squeeze to begin"><i></i></button>
-    <div class="hint">${cont ? "Squeeze to continue" : "Squeeze to begin"}</div>
-    <p class="tiny">You will not know what is inside.</p>
+    <div class="hint">${cont ? "Squeeze to continue" : "Squeeze the big orb"}</div>
+    <p class="tiny">Mystery orbs. Cute squishies. You will not know what pops out.</p>
     ${cont ? `<button class="linkish" id="reset">Start a new town</button>` : ""}
   </div>`);
   $("#start").onclick = () => { AudioBus.ensure(); AudioBus.pop(); buzz(12); cont ? enterMap() : askName(); };
@@ -451,13 +492,21 @@ function reveal(inst, info, title) {
     burst(sp.rarity === "Moon" ? ["#fff3c4", "#f6c453", "#fff"] : ["#ffb7c8", "#fff", "#cdb4ff", "#9be7c4"]);
     const ov = document.createElement("div");
     ov.className = "overlay";
-    ov.innerHTML = `<div class="tag">${esc(title || (info.isNew ? "New squishy" : "A twin"))}</div>
-      <div class="pop">${squishSVG(sp, inst, 180)}</div>
+    ov.innerHTML = `<style>@keyframes spin{to{transform:rotate(360deg)}}@keyframes orbit{from{transform:rotate(0deg) translateX(96px)}to{transform:rotate(360deg) translateX(96px)}}@keyframes popIn{0%{transform:scale(.15)}60%{transform:scale(1.16)}100%{transform:scale(1)}}.pop{animation:popIn .55s cubic-bezier(.2,1.4,.4,1)}</style>
+      <div class="gotcha">${info.isNew ? "PUNI GET!" : "TWIN PUNI!"}</div>
+      <div class="tag">${esc(title || (info.isNew ? "New squishy" : "A twin"))}</div>
+      <div class="pop reveal-stage" style="position:relative;width:220px;height:220px;display:grid;place-items:center">
+        <i style="position:absolute;inset:-8px;border-radius:50%;border:3px dashed #ff8fab;animation:spin 4s linear infinite"></i>
+        <i style="position:absolute;width:14px;height:14px;background:#ffd15c;border-radius:50%;top:8px;left:50%;animation:orbit 1.6s linear infinite"></i>
+        <i style="position:absolute;width:10px;height:10px;background:#cdb4ff;border-radius:50%;bottom:12px;left:18px;animation:orbit 2s linear infinite reverse"></i>
+        ${squishSVG(sp, inst, 200)}
+      </div>
       <h2 style="margin:8px 0 4px">${esc(inst.nickname)}</h2>
       <div>${badge(sp.rarity)} ${typePill(sp.type)}</div>
       <p class="muted" style="margin:8px 0">${esc(sp.title)} · ${esc(COLOR_NAME[inst.colorway])} · ${esc(inst.trait)}${inst.shiny ? " · shiny squeeze" : ""}</p>
       <p style="font-weight:800;margin:0 0 12px">${esc(sp.blurb)} Power: ${esc(sp.power)}.</p>
-      <p class="tiny" style="margin-top:0">+${info.puff} puffs</p><p class="hint">Tap anywhere — the town opens next</p>
+      <p class="tiny" style="margin-top:0">+${info.puff} puffs</p>
+      <p class="hint">Tap the pink button to walk the town</p>
       <div class="row" style="width:min(420px,100%)">
         <button class="btn ghost" id="send">Send a mystery</button>
         <button class="btn primary" id="keep">Play the map</button>
@@ -476,7 +525,7 @@ function reveal(inst, info, title) {
       if (e.target && e.target.closest && e.target.closest("#send")) return;
       goPlay();
     });
-    setTimeout(goPlay, 1600);
+    setTimeout(goPlay, 4200);
   });
 }
 function badge(r) { return `<span class="rarity ${RBADGE[r] || ""}">${esc(r)}</span>`; }
@@ -494,8 +543,9 @@ function enterMap() {
       <div id="orbs"></div>
       <div class="player" id="player"><div class="shoulder" id="shoulder"></div><div class="avatar"><div class="hair"></div><div class="face"></div><div class="body"></div></div></div>
     </div>
+    <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
     <div class="hud">
-      <button class="pill" id="about">${esc(S.name || "Trainer")}</button>
+      <button class="pill" id="about">${esc(S.name || "Trainer")} · ${uniqueCount()}/${SPECIES.length}</button>
       <button class="pill" id="puffs">${S.puffs} puffs</button>
     </div>
     <div class="joy" id="joy"><i id="knob"></i></div>
@@ -519,29 +569,53 @@ function enterMap() {
 }
 
 function mapArt() {
+  const trees = [
+    [160,720],[240,640],[980,640],[640,480],[520,860],[1080,780],[200,980],[1440,700],
+    [420,300],[700,260],[1500,980],[180,1500],[1040,1500],[1400,1560],[240,1700]
+  ].map(([x,y], i) => {
+    const c = i % 3 === 0 ? "#7edc8a" : i % 3 === 1 ? "#67c97a" : "#8ee39a";
+    return `<g>
+      <ellipse cx="${x}" cy="${y + 28}" rx="16" ry="6" fill="rgba(74,52,46,0.12)"/>
+      <circle cx="${x}" cy="${y}" r="28" fill="${c}"/>
+      <circle cx="${x - 16}" cy="${y + 8}" r="16" fill="#9be7a8"/>
+      <rect x="${x - 4}" y="${y + 20}" width="8" height="16" rx="3" fill="#c9855a"/>
+    </g>`;
+  }).join("");
   return `<svg class="mapart" viewBox="0 0 1600 1900" width="1600" height="1900">
     <defs>
       <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#e7f8dc"/><stop offset="1" stop-color="#c6e6b4"/>
+        <stop offset="0" stop-color="#c8f08a"/><stop offset="0.55" stop-color="#9ed85a"/><stop offset="1" stop-color="#7ec44a"/>
+      </linearGradient>
+      <linearGradient id="river" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7ad7ff"/><stop offset="1" stop-color="#4ec3f5"/>
       </linearGradient>
     </defs>
     <rect width="1600" height="1900" fill="url(#grass)"/>
-    <ellipse cx="280" cy="360" rx="240" ry="120" fill="#dff6cf" opacity="0.8"/>
-    <ellipse cx="1180" cy="260" rx="260" ry="110" fill="#d3eebf"/>
-    <path d="M1320 40 C 1460 280 1180 520 1360 820 C 1520 1100 1200 1320 1380 1620 C 1460 1760 1320 1860 1280 1900 L 1600 1900 L 1600 0 Z" fill="#b7e4f5"/>
-    <path d="M1360 200 C 1420 360 1280 480 1380 700" stroke="#e9f7ff" stroke-width="10" fill="none" opacity="0.7"/>
-    <path d="M800 1800 C 800 1500 780 1280 800 1040 C 820 820 760 640 560 540" stroke="#f6e6cf" stroke-width="56" fill="none" stroke-linecap="round"/>
-    <path d="M800 1040 C 980 980 1120 860 1180 420" stroke="#f6e6cf" stroke-width="46" fill="none" stroke-linecap="round"/>
-    <path d="M760 1280 C 520 1260 400 1260 340 1240" stroke="#f6e6cf" stroke-width="40" fill="none" stroke-linecap="round"/>
-    <ellipse cx="1180" cy="280" rx="150" ry="70" fill="#c6e6a8"/>
-    <circle cx="1180" cy="210" r="34" fill="#fff6c8" stroke="#f6c453" stroke-width="6"/>
-    <circle cx="300" cy="1180" r="26" fill="#ffd0e0"/><circle cx="340" cy="1140" r="18" fill="#ffb7c8"/><circle cx="250" cy="1220" r="16" fill="#ffc2d4"/>
-    <circle cx="520" cy="1100" r="22" fill="#ffd0e0"/><circle cx="200" cy="1320" r="20" fill="#ffd6e4"/>
-    <rect x="742" y="980" width="116" height="78" rx="18" fill="#fff" stroke="#ffb7c8" stroke-width="4"/>
-    <path d="M730 990 Q800 930 870 990" fill="#ff8fab"/>
-    <rect x="760" y="1660" width="80" height="70" rx="26" fill="#fff" stroke="#f6c453" stroke-width="4"/>
-    <path d="M360 500 h80 M370 470 h60 M378 430 h44" stroke="#e07a9a" stroke-width="8" stroke-linecap="round"/>
-    <circle cx="150" cy="700" r="34" fill="#b7e7c9"/><circle cx="980" cy="640" r="28" fill="#c6e6a8"/><circle cx="640" cy="480" r="24" fill="#d3eebf"/>
+    <ellipse cx="280" cy="360" rx="260" ry="130" fill="#dff6cf" opacity="0.7"/>
+    <ellipse cx="1180" cy="240" rx="280" ry="120" fill="#d3eebf"/>
+    <path d="M1280 0 C 1460 280 1180 520 1360 820 C 1520 1100 1180 1320 1360 1620 C 1460 1760 1320 1860 1280 1900 L 1600 1900 L 1600 0 Z" fill="url(#river)"/>
+    <path d="M1360 200 C 1420 360 1280 480 1380 700" stroke="#e9f7ff" stroke-width="14" fill="none" opacity="0.7"/>
+    <circle cx="1320" cy="1180" r="8" fill="#fff" opacity="0.55"/><circle cx="1410" cy="980" r="6" fill="#fff" opacity="0.5"/>
+    <path d="M800 1800 C 800 1500 780 1280 800 1040 C 820 820 760 640 560 540" stroke="#f8e3b8" stroke-width="64" fill="none" stroke-linecap="round"/>
+    <path d="M800 1040 C 980 980 1120 860 1180 420" stroke="#f8e3b8" stroke-width="52" fill="none" stroke-linecap="round"/>
+    <path d="M760 1280 C 520 1260 400 1260 340 1240" stroke="#f8e3b8" stroke-width="46" fill="none" stroke-linecap="round"/>
+    <ellipse cx="1180" cy="280" rx="160" ry="74" fill="#b7e27a"/>
+    <circle cx="1180" cy="196" r="40" fill="#fff6c8" stroke="#ffd15c" stroke-width="8"/>
+    <circle cx="1194" cy="184" r="8" fill="#fff" opacity="0.7"/>
+    <circle cx="300" cy="1180" r="28" fill="#ffd0e0"/><circle cx="340" cy="1140" r="20" fill="#ffb7c8"/><circle cx="250" cy="1220" r="18" fill="#ffc2d4"/>
+    <circle cx="520" cy="1100" r="24" fill="#ffd0e0"/><circle cx="200" cy="1320" r="22" fill="#ffd6e4"/>
+    <circle cx="430" cy="1280" r="14" fill="#cdb4ff"/>
+    <rect x="736" y="968" width="128" height="92" rx="22" fill="#fff" stroke="#ff8fab" stroke-width="5"/>
+    <path d="M720 982 Q800 912 880 982" fill="#ff6b9d"/>
+    <rect x="776" y="1004" width="22" height="28" rx="6" fill="#9fe4ff"/>
+    <rect x="808" y="1004" width="22" height="28" rx="6" fill="#9fe4ff"/>
+    <rect x="754" y="1648" width="92" height="82" rx="28" fill="#fff" stroke="#ffd15c" stroke-width="5"/>
+    <path d="M768 1656 h64" stroke="#ff8fab" stroke-width="6" stroke-linecap="round"/>
+    <path d="M332 508 h96 M348 472 h68 M360 430 h48" stroke="#e07a9a" stroke-width="10" stroke-linecap="round"/>
+    <path d="M360 540 L400 430 L440 540 Z" fill="#fff" stroke="#c9b6ff" stroke-width="5"/>
+    <rect x="388" y="500" width="24" height="40" fill="#ffd15c"/>
+    ${trees}
+    <ellipse cx="360" cy="1288" rx="70" ry="18" fill="#fff" opacity="0.35"/>
   </svg>`;
 }
 
@@ -720,6 +794,8 @@ function loop(t) {
   }
   S.x = Math.max(90, Math.min(WORLD.w - 90, S.x));
   S.y = Math.max(90, Math.min(WORLD.h - 90, S.y));
+  const pl = $("#player");
+  if (pl) pl.classList.toggle("walking", !!(len > 0.12 || follow));
   if (walkBuf > 220) {
     walkBuf = 0;
     if ((S.walkPuffs || 0) < 40) { S.puffs += 1; S.walkPuffs = (S.walkPuffs || 0) + 1; paintPuffs(); }
@@ -795,7 +871,9 @@ function openDex() {
     if (!inst) return `<button class="card miss" data-id="${sp.id}"><div style="height:72px;display:grid;place-items:center;font-size:28px">?</div><small>???</small></button>`;
     return `<button class="card" data-id="${sp.id}">${squishSVG(sp, inst, 72)}<small>${esc(sp.name)}</small><small>${n > 1 ? "×" + n : esc(inst.trait)}</small></button>`;
   }).join("");
-  showSheet("Squishuary", `<p class="muted">${got} / ${SPECIES.length} faces. Collect them all.</p><div class="grid">${cards}</div>`);
+  showSheet("Squishuary", `<p class="muted">${got} / ${SPECIES.length} faces. Collect them all.</p>
+    <div class="progress"><span style="width:${Math.round(got / SPECIES.length * 100)}%"></span></div>
+    <div class="grid">${cards}</div>`);
   $("#sheet").querySelectorAll(".card").forEach(c => c.onclick = () => { if (!c.classList.contains("miss")) openDetail(c.dataset.id); });
 }
 function openDetail(id) {
@@ -921,8 +999,11 @@ function openGifts() {
     const label = g.type === "mystery" ? "Mystery squeeze" : g.type === "echo" ? "Echo of " + species(g.speciesId).name : species(g.speciesId).name + " gift";
     return `<button class="gift" data-id="${g.id}"><span style="font-size:28px">🎁</span><span><b>${esc(label)}</b><small class="muted" style="display:block">From ${esc(g.from)}</small></span></button>`;
   }).join("") : `<p class="muted">No wrapped gifts yet. Send one, or duel a showcase trainer.</p>`;
+  const stamps = Math.min(7, S.squeezesToday || 0);
   showSheet("Gifts", `
-    <p class="muted">The town has squeezed ${townCount().toLocaleString()} times today. You added ${S.squeezesToday || 0}.</p>
+    <p class="muted">Town squeezes today: ${townCount().toLocaleString()}. You added ${S.squeezesToday || 0}.</p>
+    <div class="stamps">${Array.from({length: 7}, (_, i) => `<i class="${i < stamps ? "on" : ""}">${i < stamps ? "★" : "○"}</i>`).join("")}</div>
+    <p class="tiny" style="margin-top:0">Seven squeezes fill the week sticker. Kids love a full row.</p>
     ${list}
     <button class="btn primary wide" id="sendm" style="margin-top:8px">Send a mystery squeeze</button>
     <p class="tiny">Friends open your link and get a squishy. They will not know which.</p>`);
@@ -1005,8 +1086,16 @@ function openPlace(p) {
   if (p.kind === "cafe") return openCapsule();
   if (p.kind === "shrine") return openRival(RIVALS.find(r => r.id === "okami"));
   if (p.kind === "moon") return callMoon();
-  if (p.kind === "park") return toast("Sakura Puff likes it here. Squeeze a nearby orb.");
-  if (p.kind === "river") return toast("Pearl Otter glints in the shallows.");
+  if (p.kind === "park") {
+    burst(["#ffb7c8", "#fff", "#cdb4ff"]);
+    S.puffs += 1; paintPuffs(); save();
+    return toast("Petals everywhere. +1 puff. Sakura Puff loves this park.");
+  }
+  if (p.kind === "river") {
+    burst(["#9fe4ff", "#fff", "#7ee0b8"]);
+    S.puffs += 1; paintPuffs(); save();
+    return toast("The river sparkles. +1 puff. Watch for Pearl Otter.");
+  }
 }
 function callMoon() {
   if (S.lastMoon === today()) {
@@ -1028,7 +1117,7 @@ function openAbout() {
     <p class="muted">Win a squish-duel to earn an <b>echo</b> of their squishy. Theirs stays. Yours hatches with a mystery finish. Once a day per trainer.</p>
     <p class="muted">Share a mystery link. Friends get a gift on their phone. Progress stays on this device.</p>
     <p class="muted">Add to your home screen from the browser share menu so it opens like an app.</p>
-    <p class="tiny">Public playtest. Original squishies. Not affiliated with Pokémon or Squishmallows. No real-money purchases.</p>
+    <p class="tiny">Public playtest. Colorful on purpose. Original squishies. Not affiliated with Pokémon or Squishmallows. No real-money purchases. Digital prizes only.</p>
     <div class="row">
       <button class="btn ghost" id="mute">${S.muted ? "Sound off" : "Sound on"}</button>
       <button class="btn ghost" id="wipe">Reset town</button>
@@ -1118,7 +1207,7 @@ function renderBattle() {
   const sp = species(me.inst.speciesId), fp = species(foe.inst.speciesId);
   const ov = $("#battle");
   if (!ov) return;
-  ov.innerHTML = `<div class="battle">
+  ov.innerHTML = `<div class="battle arena">
     <div class="fighter foe">
       <div>${squishSVG(fp, foe.inst, 96)}</div>
       <div style="flex:1">
