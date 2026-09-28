@@ -11,13 +11,11 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://h.uguu.se/TwdjhjzJ.js" -o puni/app.js
-          curl -fsSL "https://h.uguu.se/PXGKUZBc.js" -o puni/heroes.js
-          test "$(wc -c < puni/app.js)" -gt 84000
-          test "$(wc -c < puni/heroes.js)" -gt 300000
-          grep -q PUNI_HERO puni/heroes.js
+          curl -fsSL "https://d.uguu.se/TOZTABMe.js" -o puni/app.js
+          test "$(wc -c < puni/app.js)" -gt 90000
+          grep -q startFly puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
-          git add puni/app.js puni/heroes.js
-          git commit -m "Cut out hero sprites and walk bounce" || true
+          git add puni/app.js
+          git commit -m "Add enemies, mission, hero weapons, fairy fly" || true
           git push
