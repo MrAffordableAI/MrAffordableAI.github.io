@@ -11,11 +11,11 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://d.uguu.se/DfdWtBXn.js" -o puni/app.js
-          test "$(wc -c < puni/app.js)" -gt 70000
-          grep -q demoBattle puni/app.js
+          curl -fsSL "https://n.uguu.se/qsRosuCL.js" -o puni/app.js
+          test "$(wc -c < puni/app.js)" -gt 74000
+          grep -q nijiuni puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
           git add puni/app.js
-          git commit -m "Add weather, obstacles, demo battle, unique weapons" || true
+          git commit -m "Add unicorn, fairy, and gnome squishies" || true
           git push
