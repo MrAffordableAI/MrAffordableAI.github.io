@@ -741,7 +741,7 @@ function enterMap() {
     <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
     ${S.pendingDuel ? `<div class="coach" id="duelcoach"><b>${esc(S.pendingDuel.name)} challenged you!</b><span class="muted">Tap Battle to fight their ${esc(species(S.pendingDuel.speciesId).name)}. They keep theirs. You can win an echo.</span><div style="margin-top:8px"><button class="btn gold" id="acceptduel">Fight now</button></div></div>` : ""}
-    <div class="coach" id="funbanner" style="bottom:calc(var(--nav) + 88px)"><b>Tap Zap — your wand shoots.</b><span class="muted">Pests chase you. Sparkles knock them back. Pop three to feel the prize.</span><div style="margin-top:8px"><button class="btn gold" id="huntnow">Zap one</button> <button class="btn primary" id="okcoach">Got it</button></div></div>
+    <div class="coach" id="missionbar" style="top:58px;bottom:auto"><b>Mission 1/50</b><span class="muted">Zap the 3 pests. A new world opens.</span></div>
     <nav class="nav" id="nav">
       <button data-tab="map" class="on">🗺️<span>Map</span></button>
       <button data-tab="dex">📒<span>Dex</span></button>
@@ -758,13 +758,8 @@ function enterMap() {
   bindMap();
   paintGiftDot();
   paintQuest();
-  const hunt = $("#huntnow");
-  if (hunt) hunt.onclick = () => {
-    $("#funbanner") && $("#funbanner").remove();
-    const f = (S.enemies || [])[0];
-    if (f) fireWand(f.id);
-  };
-  if ($("#okcoach")) $("#okcoach").onclick = () => { S.seenCoach = true; save(); $("#funbanner") && $("#funbanner").remove(); };
+  if (!S.activeLevel) startLevel(Math.min(50, S.level || 1));
+  paintQuest();
   const acc = $("#acceptduel");
   if (acc) acc.onclick = () => { AudioBus.ui(); demoBattle(); };
 }
@@ -787,7 +782,7 @@ function mapArt() {
     <i class="bloom" style="left:200px;top:1320px"></i>
   </div>`;
   if (painted) {
-    return `<img class="mapart painted" src="${painted}" width="1600" height="1900" alt="">${life}`;
+    return `<img class="mapart painted" id="mapbg" src="${painted}" width="1600" height="1900" alt="">${life}`;
   }
   const trees = [
     [160,720],[240,640],[980,640],[640,480],[520,860],[1080,780],[200,980],[1440,700],
@@ -932,16 +927,28 @@ function hitFoe(id) {
   drawFoes();
 }
 function paintQuest() {
+  const n = S.activeLevel || S.level || 1;
+  const st = stageOf(n);
+  const left = (S.enemies || []).length;
   const el = $("#quest");
-  if (!el) return;
-  if (S.activeLevel) el.textContent = "Lv " + S.activeLevel + " · " + (S.enemies || []).length + " left";
-  else el.textContent = "Adventure " + (S.level || 1) + "/50";
+  if (el) el.textContent = "Mission " + n + "/50";
+  const bar = $("#missionbar");
+  if (bar) {
+    bar.innerHTML = `<b>Mission ${n}/50 · ${esc(st.place)}</b><span class="muted">${left ? "Zap " + left + " pest" + (left === 1 ? "" : "s") + ". New world after that." : "Land is clear. Tap Next world."}</span>`;
+  }
+}
+function biomePic(id) {
+  const key = { park: "park", river: "park", shrine: "park", cafe: "park", candy: "candy", fest: "candy", moon: "moon", storm: "moon", snow: "moon", galaxy: "galaxy" }[id] || "park";
+  if (typeof PUNI_BIOME !== "undefined" && PUNI_BIOME[key]) return PUNI_BIOME[key];
+  if (typeof PUNI_SCENE !== "undefined" && PUNI_SCENE.map) return PUNI_SCENE.map;
+  return "";
 }
 function paintBiome(id) {
+  const pic = biomePic(id);
+  const img = $("#mapbg");
+  if (img && pic) img.src = pic;
   const map = $("#map");
-  if (!map) return;
-  const b = BIOMES.find(x => x.id === id) || BIOMES[0];
-  map.style.filter = b.filter;
+  if (map) map.style.filter = "none";
 }
 function startLevel(n) {
   const st = stageOf(n);
