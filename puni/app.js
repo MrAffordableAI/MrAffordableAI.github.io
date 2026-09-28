@@ -39,8 +39,54 @@ const HERO_KIT = {
 const FOES = [
   { kind: "sour", name: "Sour Blob", emoji: "😈", hp: 2, puff: 8 },
   { kind: "grump", name: "Grump Cap", emoji: "🍄", hp: 3, puff: 12 },
-  { kind: "ravel", name: "Ravel Imp", emoji: "🌀", hp: 2, puff: 10 }
+  { kind: "ravel", name: "Ravel Imp", emoji: "🌀", hp: 2, puff: 10 },
+  { kind: "drip", name: "Drip Mean", emoji: "💧", hp: 2, puff: 9 },
+  { kind: "frost", name: "Frost Nip", emoji: "❄️", hp: 3, puff: 11 }
 ];
+const BIOMES = [
+  { id: "park", name: "Sakura Park", filter: "saturate(1.15)", hue: "#ffd0e0" },
+  { id: "river", name: "Pearl River", filter: "hue-rotate(40deg) saturate(1.2)", hue: "#9fe4ff" },
+  { id: "shrine", name: "Soft Shrine", filter: "sepia(.2) saturate(1.2)", hue: "#ffe08a" },
+  { id: "moon", name: "Moon Hill", filter: "brightness(.78) saturate(1.2)", hue: "#cdb4ff" },
+  { id: "cafe", name: "Puni Cafe", filter: "sepia(.28) saturate(1.25)", hue: "#f0c9a0" },
+  { id: "candy", name: "Candy Grove", filter: "hue-rotate(-20deg) saturate(1.4)", hue: "#ffb7c8" },
+  { id: "storm", name: "Storm Path", filter: "brightness(.7) contrast(1.15)", hue: "#8eb6e8" },
+  { id: "snow", name: "Powder Trail", filter: "brightness(1.12) saturate(.7)", hue: "#e7f4ff" },
+  { id: "fest", name: "Lantern Fest", filter: "saturate(1.35) contrast(1.05)", hue: "#ff8fab" },
+  { id: "galaxy", name: "Star Garden", filter: "hue-rotate(210deg) brightness(.8)", hue: "#7a5cff" }
+];
+const BOSSES = [
+  { name: "King Sour", emoji: "👑", hp: 8, puff: 40 },
+  { name: "Mama Grump", emoji: "🍄", hp: 9, puff: 44 },
+  { name: "River Wraith", emoji: "👻", hp: 10, puff: 48 },
+  { name: "Moon Oni", emoji: "🌙", hp: 11, puff: 52 },
+  { name: "Cafe Crumb", emoji: "🍪", hp: 10, puff: 50 },
+  { name: "Sugar Titan", emoji: "🍭", hp: 12, puff: 56 },
+  { name: "Storm King", emoji: "⚡", hp: 13, puff: 60 },
+  { name: "Blizzard Bun", emoji: "⛄", hp: 12, puff: 58 },
+  { name: "Fest Drake", emoji: "🐉", hp: 14, puff: 66 },
+  { name: "Galaxy Queen", emoji: "🌟", hp: 16, puff: 80 }
+];
+function buildStages() {
+  const names = ["Picnic Panic","Puddle Chase","Shrine Shadows","Moon Nibbles","Oven Raid","Lollipop Lane","Thunder Trot","Snowball Sprint","Lantern Rush","Star Snack"];
+  return Array.from({ length: 50 }, (_, i) => {
+    const n = i + 1;
+    const biome = BIOMES[i % BIOMES.length];
+    const boss = n % 5 === 0 ? BOSSES[Math.floor((n / 5 - 1) % BOSSES.length)] : null;
+    const pack = 2 + Math.min(6, Math.floor(n / 8));
+    return {
+      n,
+      name: (boss ? "BOSS · " : "") + names[i % names.length] + " " + n,
+      biome: biome.id,
+      place: biome.name,
+      foes: pack,
+      boss,
+      prizePuffs: 12 + n * 2 + (boss ? 30 : 0)
+    };
+  });
+}
+const STAGES = buildStages();
+function stageOf(n) { return STAGES[(n || 1) - 1] || STAGES[0]; }
 function heroOf(id) { return HEROES.find(h => h.id === id) || HEROES[0]; }
 function kit() { return HERO_KIT[S.hero || "fox"] || HERO_KIT.fox; }
 function canFly() { return !!(S.wings || kit().fly); }
@@ -240,7 +286,8 @@ function blankSave() {
     beaten: {}, echoDay: {}, lastLucky: "", lastMoon: "", lastTown: "", claimed: [],
     squeezesToday: 0, squeezeDate: "", seenCoach: false, muted: false, started: false, hero: "fox",
     walkPuffs: 0, walkDate: "", pity: 0, didSqueeze: false, wins: 0, catches: 0,
-    enemies: [], mission: null, wings: false, flyUntil: 0, foesBeat: 0
+    enemies: [], mission: null, wings: false, flyUntil: 0, foesBeat: 0,
+    level: 1, activeLevel: 0, prizes: []
   };
 }
 function load() {
@@ -798,7 +845,7 @@ function drawFoes() {
   const box = $("#foes");
   if (!box) return;
   box.innerHTML = (S.enemies || []).map(f =>
-    `<button class="foe" data-foe="${f.id}" style="left:${f.x}px;top:${f.y}px"><span>${f.emoji}</span><b>${esc(f.name)}</b></button>`
+    `<button class="foe ${f.boss ? "boss" : ""}" data-foe="${f.id}" style="left:${f.x}px;top:${f.y}px"><span>${f.emoji}</span><b>${esc(f.name)}</b></button>`
   ).join("");
   box.querySelectorAll("[data-foe]").forEach(b => b.onclick = () => walkToFoe(b.dataset.foe));
 }
@@ -826,14 +873,15 @@ function hitFoe(id) {
         S.mission.done = true;
         S.wings = true;
         S.puffs += 40;
-        toast("Mission clear! Fairy wings unlocked. Tap Fly.");
+        toast("First mission clear! Fairy wings unlocked.");
         AudioBus.sparkle();
         burst(["#cdb4ff", "#fff", "#ffb7c8"]);
       }
     }
     paintPuffs();
     paintQuest();
-    if (S.enemies.length < 3) seedEnemies();
+    if (S.activeLevel && S.enemies.length === 0) winLevel(S.activeLevel);
+    else if (!S.activeLevel && S.enemies.length < 3) seedEnemies();
   }
   save();
   drawFoes();
@@ -841,27 +889,113 @@ function hitFoe(id) {
 function paintQuest() {
   const el = $("#quest");
   if (!el) return;
-  if (S.mission && !S.mission.done) el.textContent = "Mission " + S.mission.have + "/" + S.mission.need;
-  else el.textContent = canFly() ? "Wings ready" : "Mission";
+  if (S.activeLevel) el.textContent = "Lv " + S.activeLevel + " · " + (S.enemies || []).length + " left";
+  else el.textContent = "Adventure " + (S.level || 1) + "/50";
+}
+function paintBiome(id) {
+  const map = $("#map");
+  if (!map) return;
+  const b = BIOMES.find(x => x.id === id) || BIOMES[0];
+  map.style.filter = b.filter;
+}
+function startLevel(n) {
+  const st = stageOf(n);
+  if (n > (S.level || 1)) return toast("Clear the earlier levels first.");
+  S.activeLevel = n;
+  const biome = BIOMES.find(x => x.id === st.biome) || BIOMES[0];
+  paintBiome(st.biome);
+  const around = [[-80,-20],[80,10],[-40,90],[70,-80],[-100,70],[110,60],[-20,-110],[50,120]];
+  S.enemies = [];
+  for (let i = 0; i < st.foes; i++) {
+    const kind = FOES[i % FOES.length];
+    const hp = kind.hp + Math.floor(n / 10);
+    const off = around[i % around.length];
+    S.enemies.push({
+      id: uid(), kind: kind.kind, name: kind.name, emoji: kind.emoji,
+      hp, max: hp, puff: kind.puff + n,
+      x: S.x + off[0], y: S.y + off[1]
+    });
+  }
+  if (st.boss) {
+    S.enemies.push({
+      id: uid(), kind: "boss", name: st.boss.name, emoji: st.boss.emoji,
+      hp: st.boss.hp + Math.floor(n / 7), max: st.boss.hp, puff: st.boss.puff,
+      x: S.x + 30, y: S.y - 130, boss: true
+    });
+  }
+  save();
+  closeSheet();
+  drawFoes();
+  paintQuest();
+  toast(st.place + " · " + st.name);
+}
+async function winLevel(n) {
+  const st = stageOf(n);
+  S.activeLevel = 0;
+  S.level = Math.max(S.level || 1, n + 1);
+  S.puffs += st.prizePuffs;
+  const loot = [];
+  loot.push(st.prizePuffs + " puffs");
+  if (n === 1 || n % 5 === 0) {
+    S.wings = true;
+    loot.push("Fairy Wings stay on");
+  }
+  if (n % 5 === 0) {
+    S.inbox.push({ id: uid(), type: "mystery", from: st.boss ? st.boss.name : st.place, opened: false });
+    loot.push("Mystery gift");
+  }
+  if (n % 10 === 0) {
+    const rare = SPECIES.filter(s => s.rarity === "Sparkle" || s.rarity === "Dream");
+    const sp = rare[n % rare.length];
+    const inst = makeInstance(sp, { perfects: 1 }, { colorway: n >= 30 ? "golden" : "blush" });
+    addInstance(inst);
+    loot.push(sp.name + " prize");
+  }
+  if (n === 50) {
+    const moon = makeInstance(species("tsukimochi"), { perfects: 2 }, { colorway: "moonkissed", shiny: true });
+    addInstance(moon);
+    loot.push("Moon rabbit + Champion sticker");
+    S.prizes = (S.prizes || []).concat("Champion of Puni Town");
+  }
+  S.prizes = S.prizes || [];
+  if (!S.prizes.includes(st.place + " " + n)) S.prizes.push(st.place + " " + n);
+  save();
+  paintPuffs();
+  paintQuest();
+  paintBiome("park");
+  AudioBus.sparkle();
+  burst(["#ffd15c", "#fff", "#ff8fab"]);
+  showSheet("Level " + n + " clear!", `
+    <p><b>${esc(st.name)}</b></p>
+    <p class="muted">${esc(st.place)} is peaceful again.</p>
+    <p>${loot.map(x => "★ " + esc(x)).join("<br>")}</p>
+    <p class="muted">${n >= 50 ? "You finished all 50. Town kids will talk." : "Level " + Math.min(50, n + 1) + " is unlocked."}</p>
+    ${n < 50 ? `<button class="btn gold wide" id="nextlv">Play level ${n + 1}</button>` : ""}
+    <button class="btn primary wide" id="stay" style="margin-top:8px">Back to town</button>`);
+  const nx = $("#nextlv");
+  if (nx) nx.onclick = () => startLevel(n + 1);
+  $("#stay").onclick = () => closeSheet();
 }
 function openQuest() {
-  const m = S.mission || { title: "Rest day", blurb: "Squeeze orbs. Duel friends.", have: 0, need: 0, done: true };
+  const cur = Math.min(50, S.level || 1);
   const k = kit();
-  showSheet(m.done ? "Wings earned" : "Today's mission", `
-    <p><b>${esc(m.title)}</b></p>
-    <p class="muted">${esc(m.blurb)}</p>
-    <p>${m.done ? "You cleared it. Fairy wings are yours." : "Spoiler foes beaten: " + m.have + " / " + m.need}</p>
-    <p><b>Your look:</b> ${esc(heroOf(S.hero).name)}</p>
-    <p><b>Weapon:</b> ${esc(k.weapon)} · <b>Skill:</b> ${esc(k.skill)}</p>
-    <p class="muted">${canFly() ? "Tap Fly. You lift over the river and trees for a few seconds." : "Clear the mission (or pick the fairy / unicorn / witch) to grow wings."}</p>
-    <button class="btn primary wide" id="hunt">Find a spoiler</button>`);
-  $("#hunt").onclick = () => {
-    closeSheet();
-    const f = (S.enemies || [])[0];
-    if (!f) { seedEnemies(); drawFoes(); }
-    const n = (S.enemies || [])[0];
-    if (n) follow = { x: n.x, y: n.y, then: () => hitFoe(n.id) };
-  };
+  const cards = STAGES.map(st => {
+    const lock = st.n > cur;
+    const boss = st.boss ? " · BOSS" : "";
+    return `<button class="card ${lock ? "miss" : ""}" data-lv="${st.n}" ${lock ? "disabled" : ""}>
+      <small>Lv ${st.n}${boss}</small>
+      <b>${esc(st.place)}</b>
+      <small class="muted">${lock ? "locked" : st.prizePuffs + " puffs"}</small>
+    </button>`;
+  }).join("");
+  showSheet("Adventure 50", `
+    <p class="muted">50 levels. A boss every 5. A prize every win. Different lands each stage.</p>
+    <p><b>Weapon:</b> ${esc(k.weapon)} · ${esc(k.skill)}</p>
+    <p>You are on level <b>${cur}</b> / 50.</p>
+    <div class="grid">${cards}</div>
+    <button class="btn gold wide" id="playcur" style="margin-top:8px">Play level ${cur}</button>`);
+  $("#sheet").querySelectorAll("[data-lv]").forEach(b => b.onclick = () => startLevel(Number(b.dataset.lv)));
+  $("#playcur").onclick = () => startLevel(cur);
 }
 function startFly() {
   if (!canFly()) {
