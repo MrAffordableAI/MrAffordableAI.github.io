@@ -1,0 +1,28 @@
+name: vendor-puni
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host the game on this site
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://h.uguu.se/XvKJPzDh.js" -o puni/app.js
+          test "$(wc -c < puni/app.js)" -gt 50000
+          python3 - << 'PY'
+          from pathlib import Path
+          p = Path("puni/index.html")
+          text = p.read_text()
+          text = text.replace("https://h.uguu.se/XvKJPzDh.js", "app.js")
+          p.write_text(text)
+          Path("puni/.nojekyll").write_text("")
+          PY
+          git config user.name "MrAffordableAI"
+          git config user.email "demesae@yahoo.com"
+          git add puni/app.js puni/index.html puni/.nojekyll
+          git commit -m "Host Puni Go on the site"
+          git push
