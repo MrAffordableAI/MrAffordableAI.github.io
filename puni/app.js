@@ -31,7 +31,7 @@ const HEROES = [
 function heroOf(id) { return HEROES.find(h => h.id === id) || HEROES[0]; }
 function heroImg(id, size) {
   const art = (typeof PUNI_HERO !== "undefined" && PUNI_HERO[id]) ? PUNI_HERO[id] : "";
-  if (art) return `<img class="heroart" alt="" src="${art}" width="${size}" height="${Math.round(size * 1.35)}" style="width:${size}px;height:${Math.round(size * 1.35)}px;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(74,52,46,.22))">`;
+  if (art) return `<img class="heroart" alt="" src="${art}" width="${size}" height="${Math.round(size * 1.75)}" style="width:${size}px;height:${Math.round(size * 1.75)}px;object-fit:contain;background:transparent;filter:drop-shadow(0 12px 8px rgba(74,52,46,.3))">`;
   return `<div class="avatar"><div class="hair"></div><div class="face"></div><div class="body"></div></div>`;
 }
 
@@ -630,7 +630,7 @@ function enterMap() {
       ${mapArt()}
       <div id="pins"></div>
       <div id="orbs"></div>
-      <div class="player" id="player"><div class="shoulder" id="shoulder"></div><div class="avatar">${heroImg(S.hero || "fox", 64)}</div></div>
+      <div class="player" id="player"><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
     </div>
     <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
     <div class="hud">
