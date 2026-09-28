@@ -8,12 +8,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Puni Go — squeeze mystery orbs, collect cute anime squishies, and duel for an echo of someone else's. You won't know what you get.">
+<meta name="description" content="Puni Go — squeeze mystery orbs, collect cute squishies. You will not know what you get.">
 <meta property="og:title" content="Puni Go">
-<meta property="og:description" content="Squeeze first. Ask later. A cute mystery-orb collector you can share.">
+<meta property="og:description" content="Squeeze first. Ask later.">
 <meta property="og:url" content="https://mraffordableai.github.io/puni/">
 <title>Puni Go</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='36' r='22' fill='%23FFB7C8'/%3E%3Ccircle cx='24' cy='34' r='3.4' fill='%233A2A28'/%3E%3Ccircle cx='40' cy='34' r='3.4' fill='%233A2A28'/%3E%3Ccircle cx='25.4' cy='32.6' r='1.2' fill='%23fff'/%3E%3Ccircle cx='41.4' cy='32.6' r='1.2' fill='%23fff'/%3E%3Cellipse cx='32' cy='42' rx='3.2' ry='2.4' fill='%23F06292'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,10 +21,21 @@
 <link rel="stylesheet" href="style2.css">
 <link rel="stylesheet" href="style3.css">
 <link rel="stylesheet" href="style4.css">
+<style>
+.sq{overflow:visible}
+.orb,.orb-btn,.mini-orb{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes orbit{from{transform:rotate(0deg) translateX(96px)}to{transform:rotate(360deg) translateX(96px)}}
+@keyframes popIn{0%{transform:scale(.15)}60%{transform:scale(1.16)}100%{transform:scale(1)}}
+.pop{animation:popIn .55s cubic-bezier(.2,1.4,.4,1)}
+.player.walking .avatar{animation:walk .28s ease-in-out infinite}
+@keyframes walk{50%{transform:translateY(-6px) rotate(-6deg)}}
+</style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="app.js"></script>
+<script src="app.js?v=bounce"></script>
 </body>
 </html>
