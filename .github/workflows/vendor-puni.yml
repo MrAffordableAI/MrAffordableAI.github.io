@@ -11,14 +11,14 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://d.uguu.se/vHZcsgXx.js" -o puni/app.js
-          curl -fsSL "https://h.uguu.se/jBoEUipD.js" -o puni/portraits.js
-          test "$(wc -c < puni/app.js)" -gt 76000
-          test "$(wc -c < puni/portraits.js)" -gt 70000
-          grep -q faceHTML puni/app.js
-          grep -q PUNI_ART puni/portraits.js
+          curl -fsSL "https://d.uguu.se/RnnvGtyR.js" -o puni/app.js
+          curl -fsSL "https://n.uguu.se/bVBeTLLe.js" -o puni/scenery.js
+          test "$(wc -c < puni/app.js)" -gt 80000
+          test "$(wc -c < puni/scenery.js)" -gt 200000
+          grep -q PUNI_SCENE puni/scenery.js
+          grep -q attackFX puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
-          git add puni/app.js puni/portraits.js
-          git commit -m "Painted portraits and animated battle" || true
+          git add puni/app.js puni/scenery.js
+          git commit -m "Painted town map and spectacular battle FX" || true
           git push
