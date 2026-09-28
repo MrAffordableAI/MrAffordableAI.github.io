@@ -11,14 +11,22 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://d.uguu.se/TnekPgeh.js" -o puni/app.js
-          test "$(wc -c < puni/app.js)" -gt 50000
+          curl -fsSL "https://h.uguu.se/zcLDDaTp.js" -o puni/app.js
+          test "$(wc -c < puni/app.js)" -gt 60000
           python3 - << 'PY'
           from pathlib import Path
           Path("puni/.nojekyll").write_text("")
+          Path("puni/motion.css").write_text(""".sq{overflow:visible}.orb,.orb-btn,.mini-orb{animation:bob 1.6s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-10px)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes orbit{from{transform:rotate(0deg) translateX(96px)}to{transform:rotate(360deg) translateX(96px)}}@keyframes popIn{0%{transform:scale(.15)}60%{transform:scale(1.16)}100%{transform:scale(1)}}.pop{animation:popIn .55s cubic-bezier(.2,1.4,.4,1)}.orb::before{content:\"\";position:absolute;inset:-10px;border-radius:50%;border:3px solid rgba(255,255,255,.75);animation:pulse 1.6s ease-out infinite}@keyframes pulse{to{transform:scale(1.35);opacity:0}}.player.walking .avatar{animation:walk 0.28s ease-in-out infinite}@keyframes walk{50%{transform:translateY(-6px) rotate(-6deg)}}.gotcha{animation:popIn .45s cubic-bezier(.2,1.4,.4,1)}\""")
+          p = Path("puni/index.html")
+          t = p.read_text()
+          if "motion.css" not in t:
+              t = t.replace('href="style4.css">', 'href="style4.css">\n<link rel="stylesheet" href="motion.css">')
+          t = t.replace('src="app.js"', 'src="app.js?v=bounce"')
+          t = t.replace('src="app.js?v=playmap"', 'src="app.js?v=bounce"')
+          p.write_text(t)
           PY
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
-          git add puni/app.js puni/.nojekyll
-          git commit -m "Fix first catch so the map actually opens" || true
+          git add puni/app.js puni/index.html puni/motion.css puni/.nojekyll
+          git commit -m "Make squishies bounce, blink-shine, and spin sparkles" || true
           git push
