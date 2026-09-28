@@ -14,19 +14,18 @@
 <style>
 .player .avatar{background:transparent!important;box-shadow:none!important}
 .player .heroart,.foeart{background:transparent!important;object-fit:contain}
-.player.walking .heroart{animation:stride .28s ease-in-out infinite}
-@keyframes stride{50%{transform:rotate(8deg) translateY(-8px)}}
 .player .wand{position:absolute;right:2px;top:34px;width:44px;height:10px;border-radius:6px;background:linear-gradient(90deg,#fff,#ffd15c 40%,#ff6b9d);transform-origin:left center;z-index:5}
-.player .wand:after{content:"";position:absolute;right:-8px;top:-7px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#cdb4ff)}
+#missionbar{z-index:20}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=cute"></script>
-<script src="heroes.js?v=cute"></script>
-<script src="foes.js?v=cute"></script>
-<script src="scenery.js?v=cute"></script>
-<script src="app.js?v=cute"></script>
+<script src="portraits.js?v=world"></script>
+<script src="heroes.js?v=world"></script>
+<script src="foes.js?v=world"></script>
+<script src="biomes.js?v=world"></script>
+<script src="scenery.js?v=world"></script>
+<script src="app.js?v=world"></script>
 </body>
 </html>
