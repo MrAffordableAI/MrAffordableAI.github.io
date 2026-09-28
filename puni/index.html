@@ -12,20 +12,27 @@
 <link rel="stylesheet" href="style3.css">
 <link rel="stylesheet" href="style4.css">
 <style>
+@keyframes bob{50%{transform:translate(-50%,calc(-50% - 10px))}}
 .player .avatar{background:transparent!important;box-shadow:none!important}
 .player .heroart{background:transparent!important;object-fit:contain}
 .player.walking .heroart{animation:stride .28s ease-in-out infinite}
 @keyframes stride{50%{transform:rotate(8deg) translateY(-8px)}}
 .player.flying .heroart{animation:hover .7s ease-in-out infinite}
 @keyframes hover{50%{transform:translateY(-16px)}}
+.player .wand{position:absolute;right:2px;top:34px;width:44px;height:10px;border-radius:6px;background:linear-gradient(90deg,#fff,#ffd15c 40%,#ff6b9d);transform-origin:left center;z-index:5;box-shadow:0 0 10px #ffd15c}
+.player .wand:after{content:"";position:absolute;right:-8px;top:-7px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#cdb4ff)}
+.player .wand.cast{animation:cast .26s ease-out}
+@keyframes cast{50%{transform:rotate(-25deg) scaleX(1.15)}}
+.foeart{filter:drop-shadow(0 8px 6px rgba(70,40,30,.28));animation:jig .7s ease-in-out infinite}
+@keyframes jig{50%{transform:scale(1.06,.94)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=pests"></script>
-<script src="heroes.js?v=pests"></script>
-<script src="scenery.js?v=pests"></script>
-<script src="app.js?v=pests"></script>
+<script src="portraits.js?v=zap"></script>
+<script src="heroes.js?v=zap"></script>
+<script src="scenery.js?v=zap"></script>
+<script src="app.js?v=zap"></script>
 </body>
 </html>
