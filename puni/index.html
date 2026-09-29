@@ -12,24 +12,22 @@
 <link rel="stylesheet" href="style3.css">
 <link rel="stylesheet" href="style4.css">
 <style>
-.player .avatar{background:transparent!important;box-shadow:none!important}
+.player{position:absolute!important;z-index:8}
+.player .avatar{background:transparent!important}
 .player .heroart,.foeart{background:transparent!important;object-fit:contain}
-.player.walking .heroart{animation:stride .26s ease-in-out infinite}
-@keyframes stride{50%{transform:rotate(7deg) translateY(-10px)}}
-.player .wand{position:absolute;right:-6px;top:8px;width:30px;height:96px;z-index:6;pointer-events:none;transform-origin:12px 80px}
-.joy{z-index:40!important;touch-action:none}
-.wx,.petals,#water{pointer-events:none!important}
-#missionbar{z-index:12;pointer-events:none}
+.joy{z-index:40!important;width:128px;height:128px;touch-action:none}
+.wx,.petals,#water,#foes,#bolts{pointer-events:none!important}
+#missionbar{pointer-events:none}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=stick"></script>
-<script src="heroes.js?v=stick"></script>
-<script src="foes.js?v=stick"></script>
-<script src="biomes.js?v=stick"></script>
-<script src="scenery.js?v=stick"></script>
-<script src="app.js?v=stick"></script>
+<script src="portraits.js?v=walk"></script>
+<script src="heroes.js?v=walk"></script>
+<script src="foes.js?v=walk"></script>
+<script src="biomes.js?v=walk"></script>
+<script src="scenery.js?v=walk"></script>
+<script src="app.js?v=walk"></script>
 </body>
 </html>
