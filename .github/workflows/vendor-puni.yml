@@ -11,11 +11,10 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://h.uguu.se/bmppTzZR.js" -o puni/app.js
+          curl -fsSL "https://h.uguu.se/qXpwiKtk.js" -o puni/app.js
           test "$(wc -c < puni/app.js)" -gt 104000
-          grep -q 'backgroundSize' puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
           git add puni/app.js
-          git commit -m "Stop toast flood and fill the map" || true
+          git commit -m "Drop the camera so buttons miss the hero" || true
           git push
