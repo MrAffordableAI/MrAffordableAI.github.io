@@ -11,13 +11,11 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://n.uguu.se/baStCCVZ.js" -o puni/app.js
-          curl -fsSL "https://d.uguu.se/hLJbfsBm.js" -o puni/biomes.js
-          test "$(wc -c < puni/app.js)" -gt 100000
-          test "$(wc -c < puni/biomes.js)" -gt 400000
-          grep -q PUNI_BIOME puni/biomes.js
+          curl -fsSL "https://h.uguu.se/UFUaxWFp.js" -o puni/app.js
+          test "$(wc -c < puni/app.js)" -gt 103000
+          grep -q hurtPlayer puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
-          git add puni/app.js puni/biomes.js
-          git commit -m "Clear missions plus fantasy world maps" || true
+          git add puni/app.js
+          git commit -m "Pests nibble hearts, staff wand, harder lands" || true
           git push
