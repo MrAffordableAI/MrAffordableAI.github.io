@@ -1152,27 +1152,32 @@ function bindMap() {
     knob.style.left = (30 + (dx / len) * c) + "px";
     knob.style.top = (30 + (dy / len) * c) + "px";
   }
+  function point(e) {
+    const t = e.touches ? e.touches[0] : e;
+    const b = joyEl.getBoundingClientRect();
+    setJoy(b.left + b.width / 2, b.top + b.height / 2, t.clientX, t.clientY);
+  }
   joyEl.addEventListener("pointerdown", e => {
+    e.preventDefault(); e.stopPropagation();
     joy.on = true; follow = null;
-    joyEl.setPointerCapture(e.pointerId);
-    const b = joyEl.getBoundingClientRect();
-    setJoy(b.left + b.width / 2, b.top + b.height / 2, e.clientX, e.clientY);
+    try { joyEl.setPointerCapture(e.pointerId); } catch (err) {}
+    point(e);
   });
-  joyEl.addEventListener("pointermove", e => {
-    if (!joy.on) return;
-    const b = joyEl.getBoundingClientRect();
-    setJoy(b.left + b.width / 2, b.top + b.height / 2, e.clientX, e.clientY);
-  });
+  joyEl.addEventListener("pointermove", e => { if (joy.on) point(e); });
   const end = () => { joy.on = false; joy.x = 0; joy.y = 0; knob.style.left = "30px"; knob.style.top = "30px"; };
   joyEl.addEventListener("pointerup", end);
   joyEl.addEventListener("pointercancel", end);
+  joyEl.addEventListener("touchstart", e => { e.preventDefault(); joy.on = true; follow = null; point(e); }, { passive: false });
+  joyEl.addEventListener("touchmove", e => { e.preventDefault(); if (joy.on) point(e); }, { passive: false });
+  joyEl.addEventListener("touchend", end);
+  joyEl.addEventListener("touchcancel", end);
   $("#glow").onclick = () => { AudioBus.ui(); fireWand(); };
   const fight = $("#fight");
   if (fight) fight.onclick = () => { AudioBus.ui(); demoBattle(); };
   const flyb = $("#flybtn");
   if (flyb) flyb.onclick = () => { AudioBus.ui(); startFly(); };
   const quest = $("#quest");
-  if (quest) quest.onclick = () => openQuest();
+  if (quest) quest.onclick = () => toast("Zap the pests. Hearts are up top.");
   paintWeather();
   root.querySelectorAll(".bloom").forEach(el => {
     el.onclick = ev => {
@@ -1279,7 +1284,8 @@ function loop(t) {
   requestAnimationFrame(loop);
   const dt = Math.min(0.032, (t - last) / 1000 || 0);
   last = t;
-  if (mode !== "map" || sheet) { cam(); return; }
+  try {
+  if (mode !== "map") { cam(); return; }
   let mx = joy.x, my = joy.y;
   if (keys["w"] || keys["arrowup"]) my -= 1;
   if (keys["s"] || keys["arrowdown"]) my += 1;
@@ -1374,6 +1380,7 @@ function loop(t) {
   saveTimer += dt;
   if (saveTimer > 4) { saveTimer = 0; save(); }
   cam();
+  } catch (err) { cam(); }
 }
 
 async function openEncounter(id) {
