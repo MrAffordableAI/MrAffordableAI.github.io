@@ -317,11 +317,14 @@ function dayReset() {
 }
 
 function toast(msg) {
+  const box = $("#toasts");
+  if (!box || !msg) return;
+  box.innerHTML = "";
   const el = document.createElement("div");
   el.className = "toast";
   el.textContent = msg;
-  $("#toasts").appendChild(el);
-  setTimeout(() => el.remove(), 2400);
+  box.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 900);
 }
 function burst(colors) {
   const layer = document.createElement("div");
@@ -882,7 +885,7 @@ function drawFoes() {
   box.innerHTML = (S.enemies || []).map(f =>
     `<button class="foe ${f.boss ? "boss" : ""}" data-foe="${f.id}" style="position:absolute;left:${f.x}px;top:${f.y}px;transform:translate(-50%,-50%);z-index:10;border:0;background:transparent;animation:bob 0.9s ease-in-out infinite">
       ${foeSVG(f)}
-      <b style="display:block;margin-top:-4px;background:#fff;border-radius:8px;font-size:10px;padding:1px 6px">${esc(f.name)}</b>
+      <b class="foename">${f.hp}/${f.max}</b>
     </button>`
   ).join("");
   box.querySelectorAll("[data-foe]").forEach(b => b.onclick = () => fireWand(b.dataset.foe));
@@ -894,8 +897,8 @@ function fireWand(id) {
   if (mode !== "map") return;
   if (S._cool && Date.now() < S._cool) return;
   const f = (id && (S.enemies || []).find(x => x.id === id)) || nearestFoe();
-  if (!f) { toast("No pest in sight"); return; }
-  if (dist(S.x, S.y, f.x, f.y) > 280) { toast("A little closer"); follow = { x: f.x, y: f.y, then: () => fireWand(f.id) }; return; }
+  if (!f) return;
+  if (dist(S.x, S.y, f.x, f.y) > 520) return;
   S._cool = Date.now() + 260;
   shots.push({ x: S.x + 18, y: S.y - 54, tx: f.x, ty: f.y - 10, tid: f.id, t: 0 });
   AudioBus.pop();
@@ -916,7 +919,6 @@ function hitFoe(id) {
   f.y += Math.sin(ang) * 38;
   AudioBus.pop();
   buzz(16);
-  toast(k.weapon + "! " + f.hp + "/" + f.max);
   burst(["#fff", "#cdb4ff", "#ffd15c"]);
   if (f.hp <= 0) {
     S.puffs += f.puff;
@@ -947,7 +949,7 @@ function hurtPlayer() {
   S.hurtUntil = Date.now() + 1100;
   AudioBus.hit ? AudioBus.hit() : AudioBus.pop();
   buzz(24);
-  toast("Nipped! " + S.hp + " hearts");
+  toast(S.hp ? "Ouch" : "Down");
   paintHearts();
   const pl = $("#player");
   if (pl) { pl.classList.add("hurt"); setTimeout(() => pl.classList.remove("hurt"), 400); }
@@ -972,7 +974,7 @@ function paintQuest() {
   if (el) el.textContent = "Mission " + n + "/50";
   const bar = $("#missionbar");
   if (bar) {
-    bar.innerHTML = `<b>Mission ${n}/50 · ${esc(st.place)}</b><span class="muted">${left ? "Clear " + left + " pests. They nibble hearts. Keep moving." : "Land is clear."}</span>`;
+    bar.innerHTML = `<b>${esc(st.place)} · ${left} left</b>`;
   }
 }
 function biomePic(id) {
@@ -986,7 +988,14 @@ function paintBiome(id) {
   const img = $("#mapbg");
   if (img && pic) img.src = pic;
   const map = $("#map");
-  if (map) map.style.filter = "none";
+  if (map) {
+    map.style.filter = "none";
+    if (pic) {
+      map.style.backgroundImage = "url(" + pic + ")";
+      map.style.backgroundSize = "cover";
+      map.style.backgroundPosition = "center";
+    }
+  }
 }
 function startLevel(n) {
   const st = stageOf(n);
@@ -996,6 +1005,8 @@ function startLevel(n) {
   paintBiome(st.biome);
   S.hp = 3;
   S.hurtUntil = 0;
+  S.x = 800;
+  S.y = 980;
   paintHearts();
   const around = [[-320,40],[340,-90],[-40,-380],[420,240],[-400,200],[160,-300],[-240,340],[280,380],[-480,-40],[500,120]];
   S.enemies = [];
@@ -1335,9 +1346,14 @@ function loop(t) {
   }
   if (len > 0.12) {
     follow = null;
-    const sp = flying ? 300 : 210;
-    step(S.x + (mx / len) * sp * dt, S.y + (my / len) * sp * dt);
-  } else if (follow) {
+    const sp = flying ? 260 : 175;
+    S._vx = (S._vx || 0) + (((mx / len) * sp) - (S._vx || 0)) * Math.min(1, dt * 7);
+    S._vy = (S._vy || 0) + (((my / len) * sp) - (S._vy || 0)) * Math.min(1, dt * 7);
+    step(S.x + S._vx * dt, S.y + S._vy * dt);
+  } else {
+    S._vx = 0; S._vy = 0;
+  }
+  if (false && follow) {
     const d = dist(S.x, S.y, follow.x, follow.y);
     if (d < 24) {
       const then = follow.then;
