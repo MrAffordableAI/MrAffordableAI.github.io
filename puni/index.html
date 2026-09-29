@@ -12,12 +12,12 @@
 <link rel="stylesheet" href="style3.css">
 <link rel="stylesheet" href="style4.css">
 <style>
-#toasts{position:fixed;left:0;right:0;bottom:120px;z-index:30;pointer-events:none;display:flex;justify-content:center}
+#toasts{position:fixed;left:0;right:0;bottom:108px;z-index:30;pointer-events:none;display:flex;justify-content:center}
 .toast{position:static!important;margin:0!important}
-#missionbar{top:54px;padding:8px 12px;pointer-events:none}
-#missionbar .muted{display:none}
-.map{background:#f3c6de}
+#missionbar{top:52px;padding:6px 12px;pointer-events:none;font-size:14px}
+.action{left:auto!important;right:10px!important;bottom:calc(var(--nav) + var(--safe-b) + 248px)!important;transform:none!important;min-width:0!important;width:108px!important;max-width:108px!important;font-size:12px!important;padding:8px!important;z-index:8}
 .player{position:absolute!important;z-index:8}
+.player .wand{position:absolute;right:0;top:22px;width:26px;height:64px;pointer-events:none;transform-origin:10px 54px;z-index:6}
 .joy{z-index:40!important;touch-action:none}
 .wx,.petals,#water,#foes,#bolts{pointer-events:none!important}
 .foename{display:none}
@@ -26,11 +26,11 @@
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=quiet"></script>
-<script src="heroes.js?v=quiet"></script>
-<script src="foes.js?v=quiet"></script>
-<script src="biomes.js?v=quiet"></script>
-<script src="scenery.js?v=quiet"></script>
-<script src="app.js?v=quiet"></script>
+<script src="portraits.js?v=clear"></script>
+<script src="heroes.js?v=clear"></script>
+<script src="foes.js?v=clear"></script>
+<script src="biomes.js?v=clear"></script>
+<script src="scenery.js?v=clear"></script>
+<script src="app.js?v=clear"></script>
 </body>
 </html>
