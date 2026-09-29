@@ -14,18 +14,27 @@
 <style>
 .player .avatar{background:transparent!important;box-shadow:none!important}
 .player .heroart,.foeart{background:transparent!important;object-fit:contain}
-.player .wand{position:absolute;right:2px;top:34px;width:44px;height:10px;border-radius:6px;background:linear-gradient(90deg,#fff,#ffd15c 40%,#ff6b9d);transform-origin:left center;z-index:5}
+.player.walking .heroart{animation:stride .26s ease-in-out infinite}
+@keyframes stride{50%{transform:rotate(7deg) translateY(-10px)}}
+.player .wand{position:absolute;right:-6px;top:8px;width:30px;height:96px;z-index:6;filter:drop-shadow(0 4px 4px rgba(80,40,20,.35));transform-origin:12px 80px}
+.player .wand.cast{animation:cast .22s ease-out}
+@keyframes cast{50%{transform:rotate(-28deg)}}
+.player.hurt{filter:brightness(1.4) saturate(1.4);animation:ow .2s linear 2}
+@keyframes ow{50%{transform:translateX(-6px)}}
+.petals .petal{animation-duration:7s!important}
+#water{pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 18px,rgba(255,255,255,.08) 18px 22px);animation:flow 7s linear infinite}
+@keyframes flow{to{background-position:120px 0}}
 #missionbar{z-index:20}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="toasts"></div>
-<script src="portraits.js?v=world"></script>
-<script src="heroes.js?v=world"></script>
-<script src="foes.js?v=world"></script>
-<script src="biomes.js?v=world"></script>
-<script src="scenery.js?v=world"></script>
-<script src="app.js?v=world"></script>
+<script src="portraits.js?v=hearts"></script>
+<script src="heroes.js?v=hearts"></script>
+<script src="foes.js?v=hearts"></script>
+<script src="biomes.js?v=hearts"></script>
+<script src="scenery.js?v=hearts"></script>
+<script src="app.js?v=hearts"></script>
 </body>
 </html>
