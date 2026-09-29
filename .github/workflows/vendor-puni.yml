@@ -11,11 +11,11 @@ jobs:
       - name: Host the game on this site
         run: |
           set -euo pipefail
-          curl -fsSL "https://h.uguu.se/UFUaxWFp.js" -o puni/app.js
+          curl -fsSL "https://d.uguu.se/loWnoVZJ.js" -o puni/app.js
           test "$(wc -c < puni/app.js)" -gt 103000
-          grep -q hurtPlayer puni/app.js
+          grep -q touchstart puni/app.js
           git config user.name "MrAffordableAI"
           git config user.email "demesae@yahoo.com"
           git add puni/app.js
-          git commit -m "Pests nibble hearts, staff wand, harder lands" || true
+          git commit -m "Fix joystick touch and keep walking" || true
           git push
