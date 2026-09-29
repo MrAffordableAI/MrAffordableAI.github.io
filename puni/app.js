@@ -209,10 +209,7 @@ const BLOCKS = [
   { x: 1280, y: 200, w: 320, h: 1700 }
 ];
 function blocked(x, y) {
-  if (x < 90 || y < 90 || x > WORLD.w - 90 || y > WORLD.h - 90) return true;
-  for (const b of BLOCKS) {
-    if (x > b.x - 18 && x < b.x + b.w + 18 && y > b.y - 18 && y < b.y + b.h + 18) return true;
-  }
+  if (x < 70 || y < 70 || x > WORLD.w - 70 || y > WORLD.h - 70) return true;
   return false;
 }
 function weatherNow() {
@@ -758,7 +755,7 @@ function enterMap() {
     <button class="glow-btn" id="fight" style="bottom:calc(var(--nav) + var(--safe-b) + 108px);background:linear-gradient(180deg,#fff3c4,#f6c453);color:#6a4b16">Battle</button>
     <button class="btn primary action" id="action" hidden>Squeeze</button>
     ${S.pendingDuel ? `<div class="coach" id="duelcoach"><b>${esc(S.pendingDuel.name)} challenged you!</b><span class="muted">Tap Battle to fight their ${esc(species(S.pendingDuel.speciesId).name)}. They keep theirs. You can win an echo.</span><div style="margin-top:8px"><button class="btn gold" id="acceptduel">Fight now</button></div></div>` : ""}
-    <div class="coach" id="missionbar" style="top:58px;bottom:auto"><b>Mission 1/50</b><span class="muted">Zap the 3 pests. A new world opens.</span></div>
+    <div class="coach" id="missionbar" style="top:58px;bottom:auto;pointer-events:none"><b>Hold the map and drag to walk</b><span class="muted">The white circle works too. Then tap Zap.</span></div>
     <nav class="nav" id="nav">
       <button data-tab="map" class="on">🗺️<span>Map</span></button>
       <button data-tab="dex">📒<span>Dex</span></button>
@@ -1143,34 +1140,69 @@ function paintGiftDot() {
 function bindMap() {
   const joyEl = $("#joy");
   const knob = $("#knob");
+  const mapEl = $("#map");
+  let drag = null, dragX = 0, dragY = 0;
   function setJoy(cx, cy, px, py) {
     const dx = px - cx, dy = py - cy;
-    const max = 36, len = Math.hypot(dx, dy) || 1;
+    const max = 48, len = Math.hypot(dx, dy) || 1;
     const c = Math.min(max, len);
     joy.x = (dx / len) * (c / max);
     joy.y = (dy / len) * (c / max);
-    knob.style.left = (30 + (dx / len) * c) + "px";
-    knob.style.top = (30 + (dy / len) * c) + "px";
+    if (knob) {
+      knob.style.left = (31 + (dx / len) * c) + "px";
+      knob.style.top = (31 + (dy / len) * c) + "px";
+    }
   }
-  function point(e) {
-    const t = e.touches ? e.touches[0] : e;
-    const b = joyEl.getBoundingClientRect();
-    setJoy(b.left + b.width / 2, b.top + b.height / 2, t.clientX, t.clientY);
+  function endDrag() {
+    joy.on = false; joy.x = 0; joy.y = 0; drag = null;
+    if (knob) { knob.style.left = "31px"; knob.style.top = "31px"; }
   }
-  joyEl.addEventListener("pointerdown", e => {
-    e.preventDefault(); e.stopPropagation();
-    joy.on = true; follow = null;
-    try { joyEl.setPointerCapture(e.pointerId); } catch (err) {}
-    point(e);
-  });
-  joyEl.addEventListener("pointermove", e => { if (joy.on) point(e); });
-  const end = () => { joy.on = false; joy.x = 0; joy.y = 0; knob.style.left = "30px"; knob.style.top = "30px"; };
-  joyEl.addEventListener("pointerup", end);
-  joyEl.addEventListener("pointercancel", end);
-  joyEl.addEventListener("touchstart", e => { e.preventDefault(); joy.on = true; follow = null; point(e); }, { passive: false });
-  joyEl.addEventListener("touchmove", e => { e.preventDefault(); if (joy.on) point(e); }, { passive: false });
-  joyEl.addEventListener("touchend", end);
-  joyEl.addEventListener("touchcancel", end);
+  if (joyEl) {
+    joyEl.addEventListener("pointerdown", e => {
+      e.stopPropagation();
+      joy.on = true; follow = null; drag = "joy";
+      const b = joyEl.getBoundingClientRect();
+      setJoy(b.left + b.width / 2, b.top + b.height / 2, e.clientX, e.clientY);
+    });
+    joyEl.addEventListener("pointermove", e => {
+      if (drag !== "joy") return;
+      const b = joyEl.getBoundingClientRect();
+      setJoy(b.left + b.width / 2, b.top + b.height / 2, e.clientX, e.clientY);
+    });
+    joyEl.addEventListener("pointerup", endDrag);
+    joyEl.addEventListener("pointercancel", endDrag);
+  }
+  if (mapEl) {
+    mapEl.addEventListener("pointerdown", e => {
+      if (e.target.closest(".joy, .nav, .glow-btn, .hud, .action, button, .sheet, .scrim")) return;
+      drag = "map";
+      joy.on = true;
+      follow = null;
+      dragX = e.clientX; dragY = e.clientY;
+    });
+    mapEl.addEventListener("pointermove", e => {
+      if (drag !== "map") return;
+      const dx = e.clientX - dragX, dy = e.clientY - dragY;
+      const len = Math.hypot(dx, dy) || 1;
+      joy.x = Math.max(-1, Math.min(1, dx / 36));
+      joy.y = Math.max(-1, Math.min(1, dy / 36));
+    });
+    mapEl.addEventListener("pointerup", endDrag);
+    mapEl.addEventListener("pointercancel", endDrag);
+    mapEl.addEventListener("touchstart", e => {
+      if (e.target.closest(".joy, .nav, .glow-btn, .hud, .action, button")) return;
+      const t = e.touches[0];
+      drag = "map"; joy.on = true; follow = null;
+      dragX = t.clientX; dragY = t.clientY;
+    }, { passive: true });
+    mapEl.addEventListener("touchmove", e => {
+      if (drag !== "map") return;
+      const t = e.touches[0];
+      joy.x = Math.max(-1, Math.min(1, (t.clientX - dragX) / 36));
+      joy.y = Math.max(-1, Math.min(1, (t.clientY - dragY) / 36));
+    }, { passive: true });
+    mapEl.addEventListener("touchend", endDrag);
+  }
   $("#glow").onclick = () => { AudioBus.ui(); fireWand(); };
   const fight = $("#fight");
   if (fight) fight.onclick = () => { AudioBus.ui(); demoBattle(); };
@@ -1261,7 +1293,7 @@ function doAction(a) {
 
 function cam() {
   const world = $("#world");
-  if (!world || mode !== "map" || sheet) return;
+  if (!world || mode !== "map") return;
   const r = root.getBoundingClientRect();
   world.style.transform = `translate(${r.width / 2 - S.x}px, ${r.height / 2 - S.y - 30}px)`;
   const player = $("#player");
