@@ -90,6 +90,21 @@ function stageOf(n) { return STAGES[(n || 1) - 1] || STAGES[0]; }
 function heroOf(id) { return HEROES.find(h => h.id === id) || HEROES[0]; }
 function kit() { return HERO_KIT[S.hero || "fox"] || HERO_KIT.fox; }
 function canFly() { return !!(S.wings || kit().fly); }
+function weaponHTML() {
+  return `<svg class="wand" id="wand" viewBox="0 0 28 96" width="30" height="96" aria-hidden="true">
+    <rect x="12" y="28" width="5" height="64" rx="2.5" fill="#5c3317"/>
+    <rect x="12" y="28" width="5" height="20" rx="2" fill="#d4a017"/>
+    <circle cx="14.5" cy="16" r="11" fill="#fff3b0" stroke="#7a5cff" stroke-width="3"/>
+    <circle cx="14.5" cy="16" r="5" fill="#ff6b9d"/>
+    <path d="M14.5 2 L16.5 12 L14.5 10 L12.5 12 Z" fill="#cdb4ff"/>
+  </svg>`;
+}
+function paintHearts() {
+  const el = $("#hearts");
+  if (!el) return;
+  const h = Math.max(0, Math.min(3, S.hp == null ? 3 : S.hp));
+  el.textContent = "♥".repeat(h) + "♡".repeat(3 - h);
+}
 function heroImg(id, size) {
   const art = (typeof PUNI_HERO !== "undefined" && PUNI_HERO[id]) ? PUNI_HERO[id] : "";
   if (art) return `<img class="heroart" alt="" src="${art}" width="${size}" height="${Math.round(size * 1.75)}" style="width:${size}px;height:${Math.round(size * 1.75)}px;object-fit:contain;background:transparent;filter:drop-shadow(0 12px 8px rgba(74,52,46,.3))">`;
@@ -288,7 +303,7 @@ function blankSave() {
     squeezesToday: 0, squeezeDate: "", seenCoach: false, muted: false, started: false, hero: "fox",
     walkPuffs: 0, walkDate: "", pity: 0, didSqueeze: false, wins: 0, catches: 0,
     enemies: [], mission: null, wings: false, flyUntil: 0, foesBeat: 0,
-    level: 1, activeLevel: 0, prizes: []
+    level: 1, activeLevel: 0, prizes: [], hp: 3, hurtUntil: 0
   };
 }
 function load() {
@@ -726,12 +741,14 @@ function enterMap() {
       <div id="hazards"></div>
       <div id="foes" style="position:absolute;inset:0;z-index:9"></div>
       <div id="bolts" style="position:absolute;inset:0;z-index:11;pointer-events:none"></div>
-      <div class="player ${flying ? "flying" : ""}" id="player"><div class="wings"></div><i class="wand" id="wand"></i><div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
+      <div class="player ${flying ? "flying" : ""}" id="player"><div class="wings"></div>${weaponHTML()}<div class="shoulder" id="shoulder"></div><i class="feet"></i><div class="avatar">${heroImg(S.hero || "fox", 78)}</div></div>
     </div>
-    <div class="petals" id="petals">${Array.from({length: 10}, (_, i) => `<i class="petal" style="left:${8 + i * 9}%;animation-delay:${i * 0.7}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c'][i%4]}"></i>`).join("")}</div>
+    <div class="petals" id="petals">${Array.from({length: 16}, (_, i) => `<i class="petal" style="left:${4 + i * 6}%;animation-delay:${i * 0.4}s;background:${['#ffb7c8','#cdb4ff','#fff','#ffd15c','#9fe4ff'][i%5]}"></i>`).join("")}</div>
+    <div class="wx water" id="water"></div>
     <div class="hud">
       <button class="pill" id="about">${esc(S.name || "Trainer")} · ${uniqueCount()}/${SPECIES.length}</button>
       <button class="pill" id="quest">${S.mission && !S.mission.done ? "Mission " + S.mission.have + "/" + S.mission.need : canFly() ? "Wings ready" : "Mission"}</button>
+      <button class="pill" id="hearts">${"♥".repeat(S.hp || 3)}${"♡".repeat(Math.max(0, 3 - (S.hp || 3)))}</button>
       <button class="pill" id="puffs">${S.puffs} puffs</button>
     </div>
     <div class="joy" id="joy"><i id="knob"></i></div>
@@ -758,6 +775,7 @@ function enterMap() {
   bindMap();
   paintGiftDot();
   paintQuest();
+  paintHearts();
   if (!S.activeLevel) startLevel(Math.min(50, S.level || 1));
   paintQuest();
   const acc = $("#acceptduel");
@@ -926,6 +944,29 @@ function hitFoe(id) {
   save();
   drawFoes();
 }
+function hurtPlayer() {
+  if (Date.now() < (S.hurtUntil || 0)) return;
+  S.hp = Math.max(0, (S.hp == null ? 3 : S.hp) - 1);
+  S.hurtUntil = Date.now() + 1100;
+  AudioBus.hit ? AudioBus.hit() : AudioBus.pop();
+  buzz(24);
+  toast("Nipped! " + S.hp + " hearts");
+  paintHearts();
+  const pl = $("#player");
+  if (pl) { pl.classList.add("hurt"); setTimeout(() => pl.classList.remove("hurt"), 400); }
+  if (S.hp <= 0) failLevel();
+}
+function failLevel() {
+  const n = S.activeLevel || S.level || 1;
+  S.enemies = [];
+  S.activeLevel = 0;
+  drawFoes();
+  showSheet("Downed!", `
+    <p>The pests piled on. Hearts gone.</p>
+    <p class="muted">Mission ${n} is still waiting. Walk, zap, don't stand still.</p>
+    <button class="btn gold wide" id="retry">Try mission ${n} again</button>`);
+  $("#retry").onclick = () => { S.hp = 3; startLevel(n); };
+}
 function paintQuest() {
   const n = S.activeLevel || S.level || 1;
   const st = stageOf(n);
@@ -934,7 +975,7 @@ function paintQuest() {
   if (el) el.textContent = "Mission " + n + "/50";
   const bar = $("#missionbar");
   if (bar) {
-    bar.innerHTML = `<b>Mission ${n}/50 · ${esc(st.place)}</b><span class="muted">${left ? "Zap " + left + " pest" + (left === 1 ? "" : "s") + ". New world after that." : "Land is clear. Tap Next world."}</span>`;
+    bar.innerHTML = `<b>Mission ${n}/50 · ${esc(st.place)}</b><span class="muted">${left ? "Clear " + left + " pests. They nibble hearts. Keep moving." : "Land is clear."}</span>`;
   }
 }
 function biomePic(id) {
@@ -956,12 +997,15 @@ function startLevel(n) {
   S.activeLevel = n;
   const biome = BIOMES.find(x => x.id === st.biome) || BIOMES[0];
   paintBiome(st.biome);
-  const around = [[-200,-20],[200,40],[0,-220]];
+  S.hp = 3;
+  S.hurtUntil = 0;
+  paintHearts();
+  const around = [[-320,40],[340,-90],[-40,-380],[420,240],[-400,200],[160,-300],[-240,340],[280,380],[-480,-40],[500,120]];
   S.enemies = [];
-  const count = Math.min(3, st.foes);
+  const count = Math.min(8, 5 + Math.floor(n / 8) + (st.boss ? 1 : 0));
   for (let i = 0; i < count; i++) {
     const kind = FOES[i % FOES.length];
-    const hp = kind.hp + Math.floor(n / 10);
+    const hp = kind.hp + 1 + Math.floor(n / 6);
     const off = around[i % around.length];
     const x = S.x + off[0], y = S.y + off[1];
     S.enemies.push({
@@ -1253,7 +1297,7 @@ function loop(t) {
   }
   if (len > 0.12) {
     follow = null;
-    const sp = flying ? 260 : 170;
+    const sp = flying ? 300 : 210;
     step(S.x + (mx / len) * sp * dt, S.y + (my / len) * sp * dt);
   } else if (follow) {
     const d = dist(S.x, S.y, follow.x, follow.y);
@@ -1276,17 +1320,25 @@ function loop(t) {
   if (pl) {
     pl.classList.toggle("walking", !!(len > 0.12 || follow) && !flying);
     pl.classList.toggle("flying", flying);
+    const av = pl.querySelector(".avatar");
+    if (av && mx < -0.15) av.style.transform = "scaleX(-1)";
+    else if (av && mx > 0.15) av.style.transform = "scaleX(1)";
   }
   const pack = S.enemies || [];
   pack.forEach(f => {
     const d = dist(S.x, S.y, f.x, f.y) || 1;
-    if (d < 100) {
-      f.x += ((f.x - S.x) / d) * 70 * dt;
-      f.y += ((f.y - S.y) / d) * 70 * dt;
+    if (d < 48) {
+      hurtPlayer();
+      f.x += ((f.x - S.x) / d) * 90 * dt;
+      f.y += ((f.y - S.y) / d) * 90 * dt;
+    } else if (d < 360) {
+      const chase = (f.boss ? 78 : 58) + (S.activeLevel || 1);
+      f.x += ((S.x - f.x) / d) * chase * dt;
+      f.y += ((S.y - f.y) / d) * chase * dt;
     } else {
       const hx = f.homeX || f.x, hy = f.homeY || f.y;
-      f.x += Math.sin((t / 700) + f.x * 0.01) * 28 * dt + (hx - f.x) * 0.4 * dt;
-      f.y += Math.cos((t / 800) + f.y * 0.01) * 28 * dt + (hy - f.y) * 0.4 * dt;
+      f.x += Math.sin((t / 700) + f.x * 0.01) * 28 * dt + (hx - f.x) * 0.35 * dt;
+      f.y += Math.cos((t / 800) + f.y * 0.01) * 28 * dt + (hy - f.y) * 0.35 * dt;
     }
     pack.forEach(o => {
       if (o.id === f.id) return;
