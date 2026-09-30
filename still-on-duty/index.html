@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#140e0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Still On Duty" />
+  <title>Still On Duty</title>
+  <style>
+    :root { --bg:#140e0c; --panel:#1f1613; --ink:#f6ead4; --mute:#c4b49a; --line:#3a2c26; --go:#d4532a; --ok:#3d6a2c; --warn:#e8b84a; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,system-ui,sans-serif; padding:calc(14px + env(safe-area-inset-top)) 16px 32px; max-width:560px; margin:0 auto; }
+    h1 { margin:4px 0 8px; font-size:28px; }
+    p { color:var(--mute); line-height:1.4; }
+    .kicker { color:var(--go); font-size:11px; font-weight:800; letter-spacing:.16em; }
+    .note { color:var(--warn); font-weight:700; min-height:44px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; margin:12px 0; }
+    .time { font-size:56px; font-weight:800; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+    button, input { font:inherit; }
+    button { width:100%; border:0; border-radius:14px; padding:16px; font-weight:800; margin-top:8px; }
+    .demo { background:#f6ead4; color:#140e0c; }
+    .go { background:var(--go); color:#fff; }
+    .ok { background:var(--ok); color:#fff; }
+    .dim { background:#3a2c26; color:var(--ink); }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .row button { margin-top:8px; }
+    input[type=text] { width:100%; background:#fff; color:#140e0c; border:0; border-radius:12px; padding:12px; margin-top:8px; }
+    label.check { display:block; padding:8px 0; }
+    .log { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; color:var(--mute); font-size:14px; }
+  </style>
+</head>
+<body>
+  <div class="kicker">FIREFIGHTER DEMO</div>
+  <h1>Still On Duty</h1>
+  <p>Rehab on the fireground. Log the exposure. Watch the next 24 hours.</p>
+  <p class="note" id="note">Tap Play demo. Do not edit anything.</p>
+  <button class="demo" id="demoBtn">Play demo incident</button>
+  <div class="card">
+    <div class="kicker" id="title">READY</div>
+    <div class="time" id="clock">00:00</div>
+    <div id="meta">0 cylinders</div>
+    <button class="go" id="startBtn">Start work</button>
+    <div class="row">
+      <button class="dim" id="cylBtn">+1 cylinder</button>
+      <button class="dim" id="rehabBtn">I'm in rehab</button>
+    </div>
+  </div>
+  <div class="card">
+    <input id="what" type="text" placeholder="What was the call" />
+    <input id="where" type="text" placeholder="Address optional" />
+    <label class="check"><input id="smoke" type="checkbox" /> Smoke</label>
+    <label class="check"><input id="interior" type="checkbox" /> Interior / hot zone</label>
+    <label class="check"><input id="dirty" type="checkbox" /> Dirty gear in the cab</label>
+    <button class="ok" id="saveBtn">Save log + start 24-hour watch</button>
+    <div id="logs"></div>
+  </div>
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { mode:"ready", workStart:null, workAcc:0, cylinders:0, rehabEnd:null, watchUntil:null, timers:[] };
+function pad(n){ return String(n).padStart(2,"0"); }
+function fmt(ms){ const s=Math.max(0,Math.floor(ms/1000)); return pad(Math.floor(s/60))+":"+pad(s%60); }
+function workMs(){ return state.mode==="work" && state.workStart ? state.workAcc + (Date.now()-state.workStart) : state.workAcc; }
+function clearTimers(){ state.timers.forEach(clearTimeout); state.timers=[]; }
+function render(){
+  const due = state.cylinders>=2 || workMs()>=45*60*1000;
+  let title="READY", clock="00:00";
+  if(state.mode==="work"){ title = due ? "REHAB IS DUE" : "WORKING"; clock=fmt(workMs()); }
+  else if(state.mode==="rehab"){ const left=(state.rehabEnd||0)-Date.now(); title = left<=0 ? "REHAB DONE" : "REHAB"; clock=fmt(left); }
+  else if(state.mode==="watch"){ title="24-HOUR WATCH"; clock=fmt((state.watchUntil||0)-Date.now()); }
+  $("title").textContent=title;
+  $("clock").textContent=clock;
+  $("meta").textContent=state.cylinders+" cylinders · "+Math.round(workMs()/60000)+" min";
+}
+function playDemo(){
+  clearTimers();
+  $("what").value="Working house fire";
+  $("where").value="214 Oak St";
+  $("smoke").checked=true;
+  $("interior").checked=true;
+  $("dirty").checked=true;
+  state.mode="work"; state.workStart=Date.now()-12*60*1000; state.workAcc=0; state.cylinders=1; state.watchUntil=null; state.rehabEnd=null;
+  $("note").textContent="DEMO: smoke showing, first cylinder used.";
+  state.timers.push(setTimeout(()=>{ state.cylinders=2; $("note").textContent="DEMO: second cylinder. Rehab is due."; },2500));
+  state.timers.push(setTimeout(()=>{ state.mode="rehab"; state.workStart=null; state.workAcc=12*60*1000; state.rehabEnd=Date.now()+20*60*1000; $("note").textContent="DEMO: sit down, coat open, water."; },5000));
+  state.timers.push(setTimeout(()=>{
+    state.mode="watch"; state.watchUntil=Date.now()+24*60*60*1000;
+    $("note").textContent="DEMO: fire is out. Watch the next 24 hours.";
+    $("logs").innerHTML='<div class="log">'+new Date().toLocaleTimeString()+' · 214 Oak St · house fire · smoke · interior · dirty cab</div>'+$("logs").innerHTML;
+  },9000));
+}
+$("demoBtn").onclick=playDemo;
+$("startBtn").onclick=()=>{ clearTimers(); state.mode="work"; state.workStart=Date.now(); state.workAcc=0; state.cylinders=0; $("note").textContent="Work clock running."; };
+$("cylBtn").onclick=()=>{ state.mode="work"; if(!state.workStart) state.workStart=Date.now(); state.cylinders+=1; };
+$("rehabBtn").onclick=()=>{ if(state.mode==="work"&&state.workStart) state.workAcc+=Date.now()-state.workStart; state.workStart=null; state.mode="rehab"; state.rehabEnd=Date.now()+20*60*1000; $("note").textContent="Rehab started."; };
+$("saveBtn").onclick=()=>{
+  const text=($("what").value||"Working fire")+($("where").value?" · "+$("where").value:"")+($("smoke").checked?" · smoke":"")+($("interior").checked?" · interior":"")+($("dirty").checked?" · dirty cab":"");
+  $("logs").innerHTML='<div class="log">'+new Date().toLocaleTimeString()+" · "+text+"</div>"+$("logs").innerHTML;
+  state.mode="watch"; state.watchUntil=Date.now()+24*60*60*1000; $("note").textContent="Log saved. 24-hour watch started.";
+};
+setInterval(render,250); render();
+</script>
+</body>
+</html>
