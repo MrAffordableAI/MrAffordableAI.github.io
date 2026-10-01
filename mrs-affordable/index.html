@@ -3,26 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mrs. Affordable review desk</title>
+  <title>Mrs. Affordable scan</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="top">
-    <div class="brand"><span class="mark">MA</span><div><p class="eyebrow">Try desk</p><h1>Mrs. Affordable</h1></div></div>
-    <p class="lede">This page runs the specialist review. It is not the private server, and a scan is not read here.</p>
+    <div class="brand"><span class="mark">MA</span><div><p class="eyebrow">File scan</p><h1>Mrs. Affordable</h1></div></div>
+    <p class="lede">Drop a PDF. Text pages are read. Scanned pages are recognized on this phone, including a 100-page file. It takes a while.</p>
   </header>
   <main>
     <section class="panel">
-      <div class="panel-head"><h2>File</h2><button type="button" class="text-btn" id="sample">Load a deficient sample</button></div>
-      <div class="grid">
-        <label>State<select id="state"></select></label>
-        <label>Programs<input id="programs" value="Tax Credit, HOME" /></label>
-      </div>
-      <textarea id="file" rows="8" placeholder="Paste the file text, or load the sample"></textarea>
-      <button type="button" class="go" id="review">Review this file</button>
+      <div class="drop" id="drop"><strong>Drop the tenant PDF here</strong><span>or tap to choose it</span><input id="file" type="file" accept="application/pdf,.pdf" /></div>
+      <p class="hint" id="status">Waiting for a file.</p>
+      <button type="button" class="text-btn" id="stop">Stop</button>
     </section>
-    <section class="panel"><h2>Review</h2><pre id="out">Waiting for a file.</pre></section>
+    <section class="panel"><h2>Review</h2><pre id="out"></pre></section>
   </main>
-  <script src="review.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="scan.js"></script>
 </body>
 </html>
