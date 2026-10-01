@@ -15,90 +15,13 @@
         <h1>Affordable AI File Reviewer</h1>
       </div>
     </div>
-    <p class="lede">Drop a tenant file. Federal rules run in all 50 states. Pick the state so the allocating agency is named. A model pass is optional and the key stays on this phone.</p>
+    <p class="lede">Drop a tenant file. The specialist memo reads that file, names the state agency, and writes the corrections.</p>
   </header>
-  <main>
-    <section class="panel" id="setup">
-      <div class="panel-head">
-        <h2>1. File being reviewed</h2>
-        <button type="button" class="text-btn" id="loadSample">Load a deficient sample</button>
-      </div>
-      <div class="grid">
-        <label>Property<input id="property" placeholder="Clearwater Court" /></label>
-        <label>Unit<input id="unit" placeholder="204" /></label>
-        <label>Head of household<input id="head" placeholder="Resident name" /></label>
-        <label>Manager<input id="manager" placeholder="Site manager" /></label>
-        <label>State<select id="state"><option value="ID">Idaho — Idaho Housing and Finance Association</option></select></label>
-        <label>Certification<select id="certType"><option value="movein">Move-in / initial</option><option value="annual">Annual recertification</option><option value="interim">Interim</option></select></label>
-        <label>Effective date<input id="effective" type="date" /></label>
-        <label>Prior cert date<input id="priorCert" type="date" /></label>
-      </div>
-      <fieldset class="programs">
-        <legend>Programs on this unit</legend>
-        <label><input type="checkbox" name="program" value="lihtc" checked /> Tax Credit (LIHTC)</label>
-        <label><input type="checkbox" name="program" value="hud" /> HUD</label>
-        <label><input type="checkbox" name="program" value="home" checked /> HOME</label>
-        <label><input type="checkbox" name="program" value="rd" /> RD</label>
-        <label><input type="checkbox" name="program" value="s202" /> Section 202</label>
-      </fieldset>
-      <p class="hint" id="layerNote"></p>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><h2>2. Drop the file</h2><span class="hint">PDF, text, or images. Text inside a PDF is read on this phone. Scanned images are listed; tick any document the scan does not name.</span></div>
-      <div class="drop" id="drop"><strong>Drop the tenant file here</strong><span>or tap to choose files</span><input id="fileInput" type="file" multiple accept=".pdf,.txt,.text,.md,.csv,.png,.jpg,.jpeg,.webp,.heic" /></div>
-      <ul class="file-list" id="fileList"></ul>
-      <details class="extracted"><summary>Text read from the file</summary><pre id="extracted"></pre></details>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><h2>3. Numbers the file should support</h2><span class="hint">Use the property’s county limits for this effective date. The reviewer does not look up limits.</span></div>
-      <div class="grid">
-        <label>Income limit<input id="incomeLimit" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>TIC / 50059 / 3560-8 annual income<input id="ticIncome" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Wage annual income, your calc<input id="wageIncome" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Other annual income<input id="otherIncome" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Net family assets<input id="assets" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Actual asset income<input id="assetIncome" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Tenant rent<input id="tenantRent" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Utility allowance<input id="ua" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Max program rent<input id="maxRent" type="number" inputmode="decimal" placeholder="0" /></label>
-        <label>Paystubs in file<input id="stubCount" type="number" inputmode="numeric" placeholder="0" /></label>
-        <label>Oldest verification<input id="oldestVer" type="date" /></label>
-        <label>Lease start<input id="leaseStart" type="date" /></label>
-        <label>Lease end<input id="leaseEnd" type="date" /></label>
-        <label>Head age<input id="headAge" type="number" inputmode="numeric" placeholder="0" /></label>
-        <label>Full-time students in household<input id="ftStudents" type="number" inputmode="numeric" placeholder="0" /></label>
-        <label>Household members<input id="members" type="number" inputmode="numeric" placeholder="1" /></label>
-      </div>
-      <fieldset class="programs">
-        <legend>Student and signature facts</legend>
-        <label><input type="checkbox" id="allFt" /> Entire household is full-time students</label>
-        <label><input type="checkbox" id="studentException" /> A Section 42 student exception is documented</label>
-        <label><input type="checkbox" id="ownerSigned" /> Owner / manager signed the certification</label>
-        <label><input type="checkbox" id="adultsSigned" /> Every adult signed the certification</label>
-      </fieldset>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><h2>4. Documents in the file</h2><span class="hint">Checked means the reviewer saw it in the upload, or you confirmed it. Uncheck if it is missing.</span></div>
-      <div id="docList" class="docs"></div>
-      <button type="button" class="go" id="reviewBtn">Review this file</button>
-    </section>
-    <nav class="tabs" id="tabs">
-      <button type="button" class="on" data-tab="findings">Findings</button>
-      <button type="button" data-tab="model">How the file should look</button>
-      <button type="button" data-tab="letter">Manager corrections</button>
-    </nav>
-    <section class="panel" id="findingsPanel"><div class="score" id="score">Waiting for a file.</div><div id="findings"></div></section>
-    <section class="panel hidden" id="modelPanel"></section>
-    <section class="panel hidden" id="letterPanel"><div class="letter-actions"><button type="button" id="printLetter">Print / save letter</button></div><article id="letter" class="letter"></article></section>
-  </main>
-  <footer><p>Aid for the site manager. Not a determination by the allocating agency, HUD, USDA, or the IRS. Not a 50058 or PIC replacement.</p></footer>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/rules.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/states.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/engine.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/bolt.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/app.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/readfile.js"></script>
-  <script src="https://raw.githubusercontent.com/MrAffordableAI/Affordable-AI-File-Reviewer/main/reason.js"></script>
+  <main id="app"></main>
+  <script>
+    fetch("https://raw.githubusercontent.com/MrAffordableAI/MrAffordableAI.github.io/main/affordable-ai/body.html").then(function (r) { return r.text(); }).then(function (html) {
+      document.getElementById("app").innerHTML = html;
+    });
+  </script>
 </body>
 </html>
