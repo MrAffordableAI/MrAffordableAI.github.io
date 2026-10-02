@@ -5,380 +5,258 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#102033">
-<title>LC Valley Lead Recovery Demo</title>
+<title>LC Valley Lead Recovery</title>
 <style>
-  :root {
-    --ink: #142033;
-    --navy: #102033;
-    --navy-2: #1b314d;
-    --paper: #f6f1e7;
-    --card: #fffdf8;
-    --line: #e4d9c8;
-    --amber: #d9892b;
-    --amber-2: #f3c27a;
-    --green: #1f7a4d;
-    --red: #a33b32;
-    --blue: #2a6294;
-    --muted: #6d6256;
-    --shadow: 0 10px 30px rgba(16, 32, 51, .12);
-  }
+  :root { --ink:#142033; --navy:#102033; --paper:#f6f1e7; --card:#fffdf8; --line:#e4d9c8; --amber:#d9892b; --green:#1f7a4d; --red:#a33b32; --blue:#2a6294; --muted:#6d6256; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
-    background: radial-gradient(1200px 500px at 50% -10%, #243e60, var(--navy));
-    color: var(--ink);
-    min-height: 100dvh;
-  }
-  button, input, select, textarea { font: inherit; }
-  button { cursor: pointer; }
-  .wrap { max-width: 480px; margin: 0 auto; padding: 14px 14px 28px; }
-  header.top {
-    color: #f6f1e7;
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-    margin-bottom: 12px;
-  }
-  .brand small { display: block; letter-spacing: .14em; text-transform: uppercase; font-size: 11px; opacity: .7; }
-  .brand strong { font-size: 18px; letter-spacing: -.02em; }
-  .pill {
-    border: 1px solid rgba(243, 194, 122, .5);
-    color: var(--amber-2);
-    border-radius: 999px;
-    padding: 4px 9px;
-    font-size: 11px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  nav.tabs {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;
-  }
-  nav.tabs button {
-    background: rgba(255,255,255,.06);
-    color: #efe6d8;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 12px;
-    padding: 10px 6px;
-    font-size: 13px;
-  }
-  nav.tabs button.on { background: var(--paper); color: var(--ink); border-color: transparent; }
-  .panel { display: none; }
-  .panel.on { display: block; }
-  .card {
-    background: var(--card);
-    border-radius: 18px;
-    box-shadow: var(--shadow);
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  h1, h2, h3 { margin: 0 0 8px; letter-spacing: -.03em; }
-  h1 { font-size: 26px; line-height: 1.1; }
-  h2 { font-size: 18px; }
-  p { margin: 0 0 10px; line-height: 1.4; }
-  .muted { color: var(--muted); font-size: 14px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .choices { display: grid; gap: 8px; }
-  .choice, .primary, .ghost, .danger {
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    padding: 12px 14px;
-    text-align: left;
-    background: #fff;
-  }
-  .choice strong { display: block; }
-  .choice span { color: var(--muted); font-size: 13px; }
-  .primary {
-    background: var(--navy);
-    color: #fff;
-    border-color: var(--navy);
-    text-align: center;
-    font-weight: 650;
-    width: 100%;
-  }
-  .ghost { background: transparent; text-align: center; width: 100%; }
-  .danger { background: #fff5f3; color: var(--red); border-color: #efc7c2; text-align: center; width: 100%; }
-  label { display: block; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
-  input, select, textarea {
-    width: 100%;
-    border: 1px solid var(--line);
-    background: #fff;
-    border-radius: 12px;
-    padding: 12px;
-    color: var(--ink);
-  }
-  textarea { min-height: 72px; resize: vertical; }
-  .phone {
-    background: #0c1828;
-    border-radius: 22px;
-    padding: 12px;
-    color: #f4efe6;
-  }
-  .sms { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-  .bubble {
-    max-width: 88%;
-    padding: 10px 12px;
-    border-radius: 16px;
-    line-height: 1.35;
-    font-size: 15px;
-  }
-  .bubble.biz { background: #1d3557; align-self: flex-start; border-bottom-left-radius: 4px; }
-  .bubble.me { background: #2f6b45; align-self: flex-end; border-bottom-right-radius: 4px; }
-  .ticket {
-    background: #fffdf8;
-    color: var(--ink);
-    border-radius: 16px;
-    border: 1px dashed #c9b89a;
-    padding: 14px;
-  }
-  .stamp {
-    display: inline-block;
-    border: 2px solid var(--red);
-    color: var(--red);
-    font-weight: 800;
-    letter-spacing: .08em;
-    padding: 3px 7px;
-    transform: rotate(-2deg);
-    font-size: 12px;
-    margin-bottom: 8px;
-  }
-  .pri { font-weight: 700; }
-  .pri.emergency { color: var(--red); }
-  .pri.urgent { color: #9a5b12; }
-  .pri.standard { color: var(--blue); }
-  .pri.quote { color: var(--green); }
-  .kvs { margin: 8px 0; }
-  .kvs div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
-  .kvs b { font-weight: 600; }
-  .lead-item { width: 100%; text-align: left; }
-  .fine { font-size: 12px; color: var(--muted); }
-  .pitch p { font-size: 15px; }
-  .quote-line {
-    border-left: 3px solid var(--amber);
-    padding-left: 10px;
-    margin: 10px 0;
-    font-size: 16px;
-  }
+  body { margin:0; font-family:"Avenir Next","Segoe UI",Helvetica,Arial,sans-serif; background:radial-gradient(1200px 500px at 50% -10%,#243e60,var(--navy)); color:var(--ink); }
+  button,input,select,textarea { font:inherit; }
+  button { cursor:pointer; }
+  .wrap { max-width:480px; margin:0 auto; padding:14px 14px 32px; }
+  header.top { color:#f6f1e7; display:flex; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .brand small { display:block; letter-spacing:.14em; text-transform:uppercase; font-size:11px; opacity:.7; }
+  .brand strong { font-size:18px; }
+  .pill { border:1px solid rgba(243,194,122,.5); color:#f3c27a; border-radius:999px; padding:4px 9px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  nav.tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:12px; }
+  nav.tabs button { background:rgba(255,255,255,.06); color:#efe6d8; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px 6px; }
+  nav.tabs button.on { background:var(--paper); color:var(--ink); }
+  .panel { display:none; }
+  .panel.on { display:block; }
+  .card { background:var(--card); border-radius:18px; box-shadow:0 10px 30px rgba(16,32,51,.12); padding:16px; margin-bottom:12px; }
+  h1,h2 { margin:0 0 8px; letter-spacing:-.03em; }
+  h1 { font-size:26px; line-height:1.1; }
+  h2 { font-size:18px; }
+  p { margin:0 0 10px; line-height:1.4; }
+  .muted { color:var(--muted); font-size:14px; }
+  .choices { display:grid; gap:8px; }
+  .choice,.primary,.ghost,.danger { border-radius:14px; border:1px solid var(--line); padding:12px 14px; text-align:left; background:#fff; width:100%; }
+  .choice strong { display:block; }
+  .choice span,.fine { color:var(--muted); font-size:13px; }
+  .primary { background:var(--navy); color:#fff; border-color:var(--navy); text-align:center; font-weight:650; display:block; text-decoration:none; }
+  .ghost { background:transparent; text-align:center; }
+  .danger { background:#fff5f3; color:var(--red); border-color:#efc7c2; text-align:center; }
+  label { display:block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:10px 0 4px; }
+  input,select,textarea { width:100%; border:1px solid var(--line); border-radius:12px; padding:12px; }
+  textarea { min-height:72px; }
+  .phone { background:#0c1828; border-radius:22px; padding:12px; color:#f4efe6; }
+  .sms { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
+  .bubble { max-width:88%; padding:10px 12px; border-radius:16px; line-height:1.35; }
+  .bubble.biz { background:#1d3557; align-self:flex-start; }
+  .bubble.me { background:#2f6b45; align-self:flex-end; }
+  .ticket { background:#fffdf8; border:1px dashed #c9b89a; border-radius:16px; padding:14px; }
+  .stamp { display:inline-block; border:2px solid var(--red); color:var(--red); font-weight:800; letter-spacing:.08em; padding:3px 7px; transform:rotate(-2deg); font-size:12px; }
+  .kvs div { display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .pri.emergency { color:var(--red); } .pri.urgent { color:#9a5b12; } .pri.standard { color:var(--blue); } .pri.quote { color:var(--green); }
+  .shop { border-left:4px solid var(--amber); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand">
-      <small>Walk-in demo · $0 to run</small>
-      <strong id="brandName">LC Valley Plumbing Demo</strong>
-    </div>
-    <div class="pill">Not a real company</div>
+    <div class="brand"><small id="kicker">Three ways a shop uses this</small><strong id="brandName">LC Valley Lead Recovery</strong></div>
+    <div class="pill">Demo</div>
   </header>
-  <nav class="tabs">
-    <button class="on" data-tab="walk">Walk-in</button>
+  <nav class="tabs" id="tabs">
+    <button class="on" data-tab="shops">Shops</button>
     <button data-tab="inbox">Inbox <span id="count"></span></button>
     <button data-tab="pitch">Pitch</button>
   </nav>
 
-  <section class="panel on" id="walk">
-    <div class="card" id="stageStart">
-      <h1>Pretend I'm a customer. You're on a job.</h1>
-      <p class="muted">Hand them the phone. One recovered water-heater call is worth more than a month of this service.</p>
-      <div class="choices" id="samples"></div>
-      <label>Shop name on the demo</label>
-      <input id="shopName" value="LC Valley Plumbing Demo">
-      <label>Trade</label>
-      <select id="trade">
-        <option value="plumbing">Plumbing</option>
-        <option value="hvac">HVAC</option>
-        <option value="electrical">Electrical</option>
-      </select>
-      <div style="height:10px"></div>
-      <button class="ghost" id="blankBtn">Use a blank lead instead</button>
+  <section class="panel on" id="shops">
+    <div class="card">
+      <h1>The company does not download an app.</h1>
+      <p class="muted">You give them three links. The customer uses the first two. The owner uses the third. You do not take the calls.</p>
+      <label>Owner phone, for the text ticket</label>
+      <input id="ownerPhone" inputmode="tel" placeholder="208-555-0100">
+      <label>Owner email, optional</label>
+      <input id="ownerEmail" inputmode="email" placeholder="owner@shop.com">
     </div>
-
-    <div class="card" id="stageForm" hidden>
-      <h2>Customer form</h2>
-      <p class="muted">This is the link or missed-call reply. It does not quote price or promise a time.</p>
-      <label>Name</label>
-      <input id="custName" autocomplete="name">
-      <label>Phone</label>
-      <input id="custPhone" inputmode="tel" autocomplete="tel">
-      <label>What do they need?</label>
-      <textarea id="custProblem"></textarea>
-      <div style="height:10px"></div>
-      <button class="primary" id="sendBtn">Send request</button>
-      <button class="ghost" id="backStart">Back</button>
-    </div>
-
-    <div class="card" id="stageSms" hidden>
-      <div class="phone">
-        <div class="fine" id="smsHead">Messages · LC Valley</div>
-        <div class="sms" id="thread"></div>
-        <div class="choices" id="answers"></div>
-      </div>
-    </div>
-
-    <div class="card" id="stageOwner" hidden>
-      <p class="muted">Flip the phone. This is what the owner gets.</p>
-      <div id="ticket"></div>
-      <div style="height:10px"></div>
-      <a class="primary" id="mailLink" style="display:block;text-decoration:none">Email this lead to me</a>
-      <button class="ghost" id="againBtn">Run it again</button>
-    </div>
+    <div id="shopCards"></div>
   </section>
 
   <section class="panel" id="inbox">
     <div class="card">
-      <h2>Owner inbox</h2>
-      <p class="muted">Saved on this phone only. Nothing is uploaded.</p>
+      <h2>Owner desk</h2>
+      <p class="muted">Tickets sent from this phone, plus any lead link you open.</p>
       <div id="inboxList"></div>
       <button class="danger" id="clearBtn">Clear inbox</button>
     </div>
   </section>
 
   <section class="panel" id="pitch">
-    <div class="card pitch">
-      <h2>20-second version</h2>
-      <p class="quote-line">A lot of shops pay to get the phone to ring. When you're on a job, after hours, or with another customer, some of those leads still get missed.</p>
-      <p>Let me show you instead of explaining it. Pretend I'm the customer.</p>
-      <h2>What you are selling</h2>
-      <p>Immediate reply. The questions a tech actually needs. A clean lead on the owner's phone or email. No price invented. No appointment promised unless the shop supplied the hours.</p>
-      <h2>What to charge later</h2>
-      <p>$199–$399 a month once someone says yes. They pay their own texting bill, or you price usage in. Do not spend money before that yes.</p>
-      <p class="fine">Demo only. Not a licensed dispatch service, and not a promise that a lead will convert. Do not quit a job on the idea — quit when the income is already there.</p>
+    <div class="card">
+      <h2>What you say</h2>
+      <p>You do not install anything. Customers use a link, or reply after a missed call. You get the ticket by text.</p>
+      <p class="muted">Do not quote a price in the text. Do not promise a time. Charge $199–$399 a month only after they say yes.</p>
+    </div>
+  </section>
+
+  <section class="card" id="flow" hidden>
+    <h2 id="flowTitle">Customer</h2>
+    <p class="muted" id="flowNote"></p>
+    <div id="formBox">
+      <label>Name</label>
+      <input id="custName">
+      <label>Phone</label>
+      <input id="custPhone" inputmode="tel">
+      <label>What do you need?</label>
+      <textarea id="custProblem"></textarea>
+      <div style="height:10px"></div>
+      <button class="primary" id="sendBtn">Send request</button>
+    </div>
+    <div class="phone" id="smsBox" hidden>
+      <div class="fine" id="smsHead"></div>
+      <div class="sms" id="thread"></div>
+      <div class="choices" id="answers"></div>
+    </div>
+    <div id="doneBox" hidden>
+      <div id="ticket"></div>
+      <div style="height:10px"></div>
+      <a class="primary" id="textLink">Text this ticket to the owner</a>
+      <a class="primary" id="mailLink" style="margin-top:8px">Email this ticket to the owner</a>
+      <button class="ghost" id="anotherBtn">New request</button>
+      <button class="ghost" id="homeBtn">Back to shops</button>
     </div>
   </section>
 </div>
 <script>
-const SAMPLES = [
-  { trade: "plumbing", title: "Water heater leaking", detail: "Electric, slow leak, wants today", problem: "Water heater leaking", name: "John Smith", phone: "208-555-0148", script: "heater" },
-  { trade: "hvac", title: "No heat", detail: "Furnace blowing cold air", problem: "Furnace is running but blowing cold air", name: "Maria Lopez", phone: "208-555-0172", script: "heat" },
-  { trade: "electrical", title: "Partial outage", detail: "Kitchen dead, no burning smell", problem: "Kitchen outlets are dead", name: "Dave Nguyen", phone: "208-555-0194", script: "electric" },
-  { trade: "plumbing", title: "Missed call", detail: "The commercially valuable one", problem: "Sorry we missed your call", name: "John Smith", phone: "208-555-0148", script: "missed" }
-];
-
+const SHOPS = {
+  plumbing: { name: "LC Valley Plumbing Demo", trade: "Plumbing", problem: "Water heater leaking", script: "heater" },
+  hvac: { name: "LC Valley Heating & Air Demo", trade: "HVAC", problem: "Furnace is running but blowing cold air", script: "heat" },
+  electrical: { name: "LC Valley Electric Demo", trade: "Electrical", problem: "Kitchen outlets are dead", script: "electric" }
+};
 const $ = (id) => document.getElementById(id);
 let lead = null;
+const params = new URLSearchParams(location.search);
 
-function shop() { return $("shopName").value.trim() || "LC Valley Plumbing Demo"; }
-function firstName(n) { return (n || "there").split(" ")[0]; }
-
-function show(id) {
-  ["stageStart", "stageForm", "stageSms", "stageOwner"].forEach((x) => { $(x).hidden = x !== id; });
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem("lcv-settings") || "{}"); } catch (e) { return {}; }
 }
-
+function saveSettings() {
+  localStorage.setItem("lcv-settings", JSON.stringify({ phone: $("ownerPhone").value.trim(), email: $("ownerEmail").value.trim() }));
+}
+function ticketText(L) {
+  return ["NEW SERVICE LEAD", L.shop, L.name, L.phone, "Problem: " + L.problem, ...Object.entries(L.answers).map(([k,v]) => k + ": " + v), "Priority: " + L.priority, L.action].join("\n");
+}
+function ticketHtml(L) {
+  const rows = Object.entries(L.answers).map(([k,v]) => "<div><span>" + k + "</span><b>" + v + "</b></div>").join("");
+  return "<div class='ticket'><div class='stamp'>NEW SERVICE LEAD</div><h2>" + L.name + "</h2><p>" + L.phone + "</p><div class='kvs'><div><span>Problem</span><b>" + L.problem + "</b></div>" + rows + "<div><span>Priority</span><b class='pri " + L.priority + "'>" + L.priority + "</b></div></div><p><strong>Recommended action:</strong> " + L.action + "</p><p class='fine'>" + L.shop + "</p></div>";
+}
+function questionsFor(problem, script) {
+  if (script === "missed") return [
+    { key: "need", q: "What do you need help with?", options: ["Water heater leaking", "No heat", "Partial power outage", "Something else"] },
+    { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
+  ];
+  if (script === "heater" || /water heater|hot water|leak/.test(problem.toLowerCase())) return [
+    { key: "leak", q: "Is it actively flooding, or a slow leak?", options: ["Actively flooding", "Slow leak", "No leak, no hot water"] },
+    { key: "type", q: "Gas or electric, and about how old?", options: ["Electric, about 12 years", "Gas, about 8 years", "Not sure"] },
+    { key: "when", q: "When do you need service?", options: ["Today", "This week", "Just a quote"] }
+  ];
+  if (script === "heat" || /furnace|heat|cool|ac/.test(problem.toLowerCase())) return [
+    { key: "symptom", q: "Is it blowing air, or not turning on?", options: ["Blowing cold air", "Not turning on", "Short cycling"] },
+    { key: "fuel", q: "Gas furnace, heat pump, or not sure?", options: ["Gas furnace", "Heat pump", "Not sure"] },
+    { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
+  ];
+  if (script === "electric" || /outlet|power|breaker/.test(problem.toLowerCase())) return [
+    { key: "scope", q: "One room, or more of the house?", options: ["Kitchen only", "Several rooms", "Whole house"] },
+    { key: "safety", q: "Any burning smell, sparks, or warm outlets?", options: ["No", "Burning smell", "Sparks or warm outlet"] },
+    { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
+  ];
+  return [
+    { key: "detail", q: "Active problem, or a quote?", options: ["Active problem", "Quote only", "Not sure"] },
+    { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
+  ];
+}
+function priorityFrom(answers, problem) {
+  const joined = (Object.values(answers).join(" ") + " " + problem).toLowerCase();
+  if (/flood|burning|spark|whole house/.test(joined)) return "emergency";
+  if (/today|slow leak|cold air|kitchen/.test(joined)) return "urgent";
+  if (/quote/.test(joined)) return "quote";
+  return "standard";
+}
+function actionFor(pri) {
+  if (pri === "emergency") return "Call now. Do not quote a price. If they report sparks, smoke, or a gas smell, tell them to leave and call emergency services.";
+  if (pri === "quote") return "Call to schedule a quote. Do not text a price.";
+  return "Call customer to schedule service.";
+}
+function saveLead(L) {
+  const all = JSON.parse(localStorage.getItem("lcv-leads") || "[]");
+  all.unshift(L);
+  localStorage.setItem("lcv-leads", JSON.stringify(all.slice(0, 40)));
+  $("count").textContent = "(" + all.length + ")";
+}
+function renderInbox() {
+  const all = JSON.parse(localStorage.getItem("lcv-leads") || "[]");
+  $("count").textContent = all.length ? "(" + all.length + ")" : "";
+  $("inboxList").innerHTML = all.length ? "" : "<p class='muted'>No tickets yet.</p>";
+  all.forEach((L) => {
+    const b = document.createElement("button");
+    b.className = "choice";
+    b.innerHTML = "<strong>" + L.name + " · " + L.priority + "</strong><span>" + L.shop + " — " + L.problem + "</span>";
+    b.onclick = () => openDone(L);
+    $("inboxList").appendChild(b);
+  });
+}
+function renderShops() {
+  $("shopCards").innerHTML = "";
+  Object.entries(SHOPS).forEach(([key, shop]) => {
+    const card = document.createElement("div");
+    card.className = "card shop";
+    card.innerHTML = "<h2>" + shop.name + "</h2><p class='muted'>" + shop.trade + ". Three links. No app install.</p>";
+    const box = document.createElement("div");
+    box.className = "choices";
+    [["customer", "1. Customer link", "Customer fills this. You do not."], ["missed", "2. Missed-call link", "Sorry we missed your call, then the questions."], ["desk", "3. Owner desk", "The ticket lands here, and can be texted or emailed."]].forEach(([mode, title, detail]) => {
+      const b = document.createElement("button");
+      b.className = "choice";
+      b.innerHTML = "<strong>" + title + "</strong><span>" + detail + "</span>";
+      b.onclick = () => start(key, mode);
+      box.appendChild(b);
+    });
+    card.appendChild(box);
+    $("shopCards").appendChild(card);
+  });
+}
+function start(key, mode) {
+  const shop = SHOPS[key];
+  lead = { key, mode, shop: shop.name, script: mode === "missed" ? "missed" : shop.script, answers: {}, step: 0 };
+  $("brandName").textContent = shop.name;
+  $("kicker").textContent = mode === "desk" ? "Owner desk" : mode === "missed" ? "Missed-call reply" : "Customer link";
+  $("tabs").hidden = true;
+  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("on"));
+  $("flow").hidden = false;
+  $("formBox").hidden = mode === "desk";
+  $("smsBox").hidden = true;
+  $("doneBox").hidden = true;
+  if (mode === "desk") { $("flow").hidden = true; $("tabs").hidden = false; document.querySelector("[data-tab='inbox']").click(); return; }
+  $("flowTitle").textContent = mode === "missed" ? "Missed call" : "Service request";
+  $("flowNote").textContent = mode === "missed" ? "This is what the customer sees after the shop misses the call." : "This is the link the shop puts on the website, a card, or a text.";
+  $("custName").value = "";
+  $("custPhone").value = "";
+  $("custProblem").value = mode === "missed" ? "" : shop.problem;
+}
+function begin() {
+  lead.name = $("custName").value.trim() || "Customer";
+  lead.phone = $("custPhone").value.trim() || "No phone";
+  lead.problem = $("custProblem").value.trim() || "Service request";
+  lead.steps = questionsFor(lead.problem, lead.script);
+  lead.at = new Date().toISOString();
+  $("formBox").hidden = true;
+  $("smsBox").hidden = false;
+  $("thread").innerHTML = "";
+  $("smsHead").textContent = lead.shop;
+  const hello = lead.mode === "missed"
+    ? "Sorry we missed your call at " + lead.shop + ". Reply with what you need. This is not a confirmed appointment and we do not quote price by text."
+    : "Hi " + lead.name.split(" ")[0] + ", thanks for contacting " + lead.shop + ". A few questions for the technician. No price and no appointment in this text.";
+  bubble(hello, "biz");
+  ask();
+}
 function bubble(text, who) {
   const el = document.createElement("div");
   el.className = "bubble " + who;
   el.textContent = text;
   $("thread").appendChild(el);
-  el.scrollIntoView({ block: "nearest" });
 }
-
-function classify(text) {
-  const t = text.toLowerCase();
-  if (/gas smell|smell gas|spark|burning smell|smoke|flood|sewage|no power|whole house/.test(t)) return "emergency";
-  if (/leak|no heat|no cool|not cooling|water heater|outlet|breaker|today|asap|urgent/.test(t)) return "urgent";
-  if (/quote|estimate|price|ballpark/.test(t)) return "quote";
-  return "standard";
-}
-
-function questionsFor(problem, script) {
-  if (script === "missed") {
-    return [
-      { key: "need", q: "What do you need help with?", options: ["Water heater leaking", "Clogged drain", "No hot water", "Something else"] },
-      { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
-    ];
-  }
-  if (script === "heater" || /water heater|hot water/.test(problem.toLowerCase())) {
-    return [
-      { key: "leak", q: "Is the water heater actively flooding, or is it a slow leak?", options: ["Actively flooding", "Slow leak", "No leak, no hot water"] },
-      { key: "type", q: "Gas or electric, and about how old?", options: ["Electric, about 12 years", "Gas, about 8 years", "Not sure"] },
-      { key: "when", q: "When do you need service?", options: ["Today", "This week", "Just a quote"] }
-    ];
-  }
-  if (script === "heat" || /furnace|heat|ac|cool/.test(problem.toLowerCase())) {
-    return [
-      { key: "symptom", q: "Is it blowing air, or is the system not turning on?", options: ["Blowing cold air", "Not turning on", "Short cycling"] },
-      { key: "fuel", q: "Gas furnace, heat pump, or not sure?", options: ["Gas furnace", "Heat pump", "Not sure"] },
-      { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
-    ];
-  }
-  if (script === "electric" || /outlet|breaker|panel|power/.test(problem.toLowerCase())) {
-    return [
-      { key: "scope", q: "Is it one room, or is power out in more of the house?", options: ["Kitchen only", "Several rooms", "Whole house"] },
-      { key: "safety", q: "Any burning smell, sparks, or warm outlets?", options: ["No", "Burning smell", "Sparks or warm outlet"] },
-      { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
-    ];
-  }
-  return [
-    { key: "detail", q: "Is this an active leak or failure, or a quote request?", options: ["Active problem", "Quote only", "Not sure"] },
-    { key: "when", q: "When do you need someone?", options: ["Today", "This week", "Just a quote"] }
-  ];
-}
-
-function priorityFrom(answers, problem) {
-  const joined = Object.values(answers).join(" ").toLowerCase() + " " + problem.toLowerCase();
-  if (/flood|burning|spark|whole house|gas smell/.test(joined)) return "emergency";
-  if (/today|slow leak|cold air|kitchen only|active/.test(joined)) return "urgent";
-  if (/quote/.test(joined)) return "quote";
-  return classify(problem);
-}
-
-function actionFor(pri) {
-  if (pri === "emergency") return "Call now. Do not quote a price. If they report gas smell, sparks, or smoke, use the shop's safety script: leave the area and call emergency services.";
-  if (pri === "urgent") return "Call customer to schedule service.";
-  if (pri === "quote") return "Call to schedule a quote. Do not text a price.";
-  return "Call customer to confirm details and schedule.";
-}
-
-function renderSamples() {
-  $("samples").innerHTML = "";
-  SAMPLES.forEach((s, i) => {
-    const b = document.createElement("button");
-    b.className = "choice";
-    b.innerHTML = "<strong>" + s.title + "</strong><span>" + s.detail + "</span>";
-    b.onclick = () => startSample(i);
-    $("samples").appendChild(b);
-  });
-}
-
-function startSample(i) {
-  const s = SAMPLES[i];
-  $("trade").value = s.trade;
-  if (!$("shopName").value.trim() || $("shopName").value.includes("Demo")) {
-    const names = { plumbing: "LC Valley Plumbing Demo", hvac: "LC Valley Heating & Air Demo", electrical: "LC Valley Electric Demo" };
-    $("shopName").value = names[s.trade];
-  }
-  $("brandName").textContent = shop();
-  $("custName").value = s.name;
-  $("custPhone").value = s.phone;
-  $("custProblem").value = s.problem;
-  lead = { script: s.script };
-  show("stageForm");
-}
-
-function beginThread() {
-  const name = $("custName").value.trim() || "Customer";
-  const phone = $("custPhone").value.trim() || "No phone";
-  const problem = $("custProblem").value.trim() || "Service request";
-  const script = (lead && lead.script) || "custom";
-  lead = {
-    name, phone, problem, script,
-    shop: shop(),
-    trade: $("trade").value,
-    answers: {},
-    steps: questionsFor(problem, script),
-    step: 0,
-    at: new Date().toISOString()
-  };
-  $("thread").innerHTML = "";
-  $("smsHead").textContent = "Messages · " + lead.shop;
-  show("stageSms");
-  if (script === "missed") {
-    bubble("Sorry we missed your call at " + lead.shop + ". Reply with what you need and a technician can follow up. We won't quote a price by text.", "biz");
-  } else {
-    bubble("Hi " + firstName(name) + ", thanks for contacting " + lead.shop + ". I can get a few details for the technician. We don't quote price or book a time in this text.", "biz");
-  }
-  askNext();
-}
-
-function askNext() {
+function ask() {
   $("answers").innerHTML = "";
   if (lead.step >= lead.steps.length) return finish();
   const step = lead.steps[lead.step];
@@ -387,59 +265,41 @@ function askNext() {
     const b = document.createElement("button");
     b.className = "choice";
     b.innerHTML = "<strong>" + opt + "</strong>";
-    b.onclick = () => {
-      lead.answers[step.key] = opt;
-      bubble(opt, "me");
-      lead.step += 1;
-      askNext();
-    };
+    b.onclick = () => { lead.answers[step.key] = opt; bubble(opt, "me"); lead.step += 1; ask(); };
     $("answers").appendChild(b);
   });
 }
-
 function finish() {
-  bubble("Thanks. Someone from " + lead.shop + " will follow up. This text is not a confirmed appointment.", "biz");
-  $("answers").innerHTML = "";
+  bubble("Thanks. Someone from the shop will follow up. This is not a confirmed appointment.", "biz");
   lead.priority = priorityFrom(lead.answers, lead.problem);
   lead.action = actionFor(lead.priority);
   saveLead(lead);
-  setTimeout(() => reveal(lead), 500);
+  openDone(lead);
 }
-
-function ticketHtml(L) {
-  const rows = Object.entries(L.answers).map(([k, v]) => "<div><span>" + k + "</span><b>" + v + "</b></div>").join("");
-  return "<div class='ticket'><div class='stamp'>NEW SERVICE LEAD</div><h2>" + L.name + "</h2><p>" + L.phone + "</p><div class='kvs'><div><span>Problem</span><b>" + L.problem + "</b></div>" + rows + "<div><span>Priority</span><b class='pri " + L.priority + "'>" + L.priority + "</b></div></div><p><strong>Recommended action:</strong> " + L.action + "</p><p class='fine'>" + L.shop + " · " + new Date(L.at).toLocaleString() + "</p></div>";
-}
-
-function reveal(L) {
+function openDone(L) {
+  $("tabs").hidden = true;
+  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("on"));
+  $("flow").hidden = false;
+  $("formBox").hidden = true;
+  $("smsBox").hidden = true;
+  $("doneBox").hidden = false;
+  $("flowTitle").textContent = "Owner ticket";
+  $("flowNote").textContent = "This is what the shop gets. Text or email sends from this phone. Nothing is uploaded.";
   $("ticket").innerHTML = ticketHtml(L);
-  const body = encodeURIComponent(["NEW SERVICE LEAD", L.name, L.phone, "Problem: " + L.problem, ...Object.entries(L.answers).map(([k,v]) => k + ": " + v), "Priority: " + L.priority, L.action].join("\n"));
-  $("mailLink").href = "mailto:?subject=" + encodeURIComponent("New lead: " + L.name) + "&body=" + body;
-  show("stageOwner");
+  const body = encodeURIComponent(ticketText(L));
+  const settings = loadSettings();
+  const phone = ($("ownerPhone") && $("ownerPhone").value.trim()) || settings.phone || "";
+  const email = ($("ownerEmail") && $("ownerEmail").value.trim()) || settings.email || "";
+  $("textLink").href = "sms:" + phone.replace(/[^\d+]/g, "") + (phone ? "&" : "?") + "body=" + body;
+  $("mailLink").href = "mailto:" + email + "?subject=" + encodeURIComponent("New lead: " + L.name) + "&body=" + body;
 }
-
-function loadInbox() {
-  try { return JSON.parse(localStorage.getItem("lcv-leads") || "[]"); } catch (e) { return []; }
+function goHome() {
+  $("flow").hidden = true;
+  $("tabs").hidden = false;
+  $("brandName").textContent = "LC Valley Lead Recovery";
+  $("kicker").textContent = "Three ways a shop uses this";
+  document.querySelector("[data-tab='shops']").click();
 }
-function saveLead(L) {
-  const all = loadInbox();
-  all.unshift(L);
-  localStorage.setItem("lcv-leads", JSON.stringify(all.slice(0, 30)));
-  $("count").textContent = all.length ? "(" + all.length + ")" : "";
-}
-function renderInbox() {
-  const all = loadInbox();
-  $("count").textContent = all.length ? "(" + all.length + ")" : "";
-  $("inboxList").innerHTML = all.length ? "" : "<p class='muted'>No leads yet. Run the walk-in demo.</p>";
-  all.forEach((L) => {
-    const b = document.createElement("button");
-    b.className = "choice lead-item";
-    b.innerHTML = "<strong>" + L.name + " · " + L.priority + "</strong><span>" + L.problem + "</span>";
-    b.onclick = () => { $("ticket").innerHTML = ticketHtml(L); show("stageOwner"); document.querySelector("[data-tab='walk']").click(); };
-    $("inboxList").appendChild(b);
-  });
-}
-
 document.querySelectorAll("nav.tabs button").forEach((btn) => {
   btn.onclick = () => {
     document.querySelectorAll("nav.tabs button").forEach((b) => b.classList.remove("on"));
@@ -449,14 +309,18 @@ document.querySelectorAll("nav.tabs button").forEach((btn) => {
     if (btn.dataset.tab === "inbox") renderInbox();
   };
 });
-$("shopName").addEventListener("input", () => { $("brandName").textContent = shop(); });
-$("blankBtn").onclick = () => { lead = { script: "custom" }; $("custName").value = ""; $("custPhone").value = ""; $("custProblem").value = ""; show("stageForm"); };
-$("backStart").onclick = () => show("stageStart");
-$("sendBtn").onclick = beginThread;
-$("againBtn").onclick = () => show("stageStart");
+$("ownerPhone").addEventListener("change", saveSettings);
+$("ownerEmail").addEventListener("change", saveSettings);
+$("sendBtn").onclick = begin;
+$("anotherBtn").onclick = () => lead && start(lead.key, lead.mode || "customer");
+$("homeBtn").onclick = goHome;
 $("clearBtn").onclick = () => { localStorage.removeItem("lcv-leads"); renderInbox(); };
-renderSamples();
+const saved = loadSettings();
+$("ownerPhone").value = saved.phone || "";
+$("ownerEmail").value = saved.email || "";
+renderShops();
 renderInbox();
+if (params.get("shop") && SHOPS[params.get("shop")]) start(params.get("shop"), params.get("mode") || "customer");
 </script>
 </body>
 </html>
