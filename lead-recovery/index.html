@@ -248,8 +248,14 @@ function intake(shop, missed) {
     const box = document.getElementById("box");
     box.innerHTML = "<h2>Ticket saved</h2><p>This lead is on the owner desk. You do not need another button for that part.</p>" + ticketHtml(L) + "<a class='btn primary' id='openDesk' href='" + link("desk", shop) + "'>Open owner desk</a><a class='btn' id='sendMail' href='" + mail + "'>Send email</a><a class='btn' id='sendText' href='" + sms + "'>Send text</a><p class='fine' id='sentNote'>Send email opens your mail. Send text opens Messages on a phone. Hit send in that app. A computer cannot send a text by itself.</p><button class='btn' id='copyTicket'>Copy ticket</button>";
     document.getElementById("copyTicket").onclick = function () { copy(ticketText(L)); };
-    document.getElementById("sendMail").onclick = function () { document.getElementById("sentNote").textContent = "Mail should be open. Hit send there."; };
-    document.getElementById("sendText").onclick = function () { document.getElementById("sentNote").textContent = "On a phone, Messages opens. On this computer, use Send email."; };
+    document.getElementById("sendMail").onclick = function () { document.getElementById("sentNote").textContent = "If Mail opened, hit send there. If a popup says Pick an app, click Cancel and use Copy ticket."; };
+    document.getElementById("sendText").onclick = function (e) {
+      const phone = /iPhone|iPad|Android/i.test(navigator.userAgent);
+      if (!phone) {
+        e.preventDefault();
+        document.getElementById("sentNote").textContent = "This computer cannot send a text. Click Cancel on that popup. Use Send email, or open this page on your phone and tap Send text.";
+      }
+    };
   }
 }
 function offer() {
