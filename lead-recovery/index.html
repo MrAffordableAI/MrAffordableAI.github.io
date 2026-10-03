@@ -51,7 +51,7 @@
       <h1>Missed calls become booked jobs.</h1>
       <p>A shop on a job loses the next customer. Lead Desk answers, asks the questions a tech needs, and puts a ticket on the owner's phone.</p>
       <div class="price">$249<span style="font-size:16px;font-weight:500">/month per shop</span></div>
-      <p class="muted">Customer link. Missed-call link. Owner text and email. No app install.</p>
+      <p class="muted">Customer link. Missed-call link. Owner ticket on this phone, plus text or email. No app install. Version 1.1</p>
       <button class="btn primary" id="create">Create a shop</button>
       <button class="btn" id="offerBtn"><strong>Offer to send a shop</strong><span>The text you send when they say yes.</span></button>
     </div>
@@ -84,18 +84,27 @@ function esc(s) {
 function first(n) { return String(n || "there").split(" ")[0]; }
 function digits(p) { return String(p || "").replace(/[^\d+]/g, ""); }
 function appEl() { return document.getElementById("app"); }
+function route(problem, trade) {
+  const p = String(problem || "").toLowerCase();
+  const tradeName = String(trade || "").toLowerCase();
+  if (/water heater|hot water|leak|drain|clog|toilet|faucet|pipe|sewer/.test(p)) return "plumbing";
+  if (/furnace|heat pump|thermostat|no heat|no cool|not cooling|air condition|a\/c|blowing cold/.test(p) || tradeName === "hvac") return "hvac";
+  if (/outlet|breaker|panel|power|spark|electric/.test(p) || tradeName === "electrical") return "electrical";
+  if (tradeName === "plumbing") return "plumbing";
+  return "plumbing";
+}
 function questions(problem, trade, missed) {
   if (missed) return [
     { key:"Need", q:"What do you need help with?", options:["Water heater","No heat or no cooling","Power problem","Drain or leak","Something else"] },
     { key:"When", q:"When do you need someone?", options:["Today","This week","Just a quote"] }
   ];
-  const t = (problem + " " + trade).toLowerCase();
-  if (/heat|cool|furnace|ac|hvac/.test(t)) return [
+  const kind = route(problem, trade);
+  if (kind === "hvac") return [
     { key:"Symptom", q:"Is the system blowing air, or not turning on?", options:["Blowing cold air","Not turning on","Short cycling","Not cooling"] },
     { key:"System", q:"Gas furnace, heat pump, or not sure?", options:["Gas furnace","Heat pump","Central air","Not sure"] },
     { key:"When", q:"When do you need someone?", options:["Today","This week","Just a quote"] }
   ];
-  if (/electric|outlet|power|panel|breaker/.test(t)) return [
+  if (kind === "electrical") return [
     { key:"Scope", q:"One room, or more of the house?", options:["One room","Several rooms","Whole house"] },
     { key:"Safety", q:"Any burning smell, sparks, or warm outlets?", options:["No","Burning smell","Sparks or warm outlet"] },
     { key:"When", q:"When do you need someone?", options:["Today","This week","Just a quote"] }
@@ -160,7 +169,7 @@ function desk(shop) {
   const leads = db().leads.filter(function (l) { return l.shopId === shop.id || l.shop === shop.name; });
   setBrand(shop.name, "Owner desk");
   document.getElementById("priceTag").textContent = shop.trade;
-  appEl().innerHTML = "<div class='card'><h1>" + esc(shop.name) + "</h1><p class='muted'>" + esc(shop.trade) + (shop.city ? " · " + esc(shop.city) : "") + ". Send these two links. You do not take the calls.</p><button class='btn' id='copyC'><strong>Copy customer link</strong><span>Website, card, or text.</span></button><button class='btn' id='copyM'><strong>Copy missed-call link</strong><span>What they get when the shop misses the call.</span></button><a class='btn primary' id='textLinks'>Text both links to the owner</a></div><div class='card'><h2>Leads</h2><div id='leads'></div></div><button class='btn ghost' id='home'>All shops</button>";
+  appEl().innerHTML = "<div class='card'><h1>" + esc(shop.name) + "</h1><p class='muted'>" + esc(shop.trade) + (shop.city ? " · " + esc(shop.city) : "") + ". Open a link to show it, or copy it to send.</p><a class='btn primary' id='openC'>Open customer link</a><a class='btn' id='openM'>Open missed-call link</a><button class='btn' id='copyC'><strong>Copy customer link</strong><span>Website, card, or text.</span></button><button class='btn' id='copyM'><strong>Copy missed-call link</strong><span>What they get when the shop misses the call.</span></button><a class='btn' id='textLinks'>Text both links to the owner</a></div><div class='card'><h2>Leads</h2><div id='leads'></div></div><button class='btn ghost' id='home'>All shops</button>";
   const box = document.getElementById("leads");
   if (!leads.length) box.innerHTML = "<p class='muted'>No leads yet. Open the customer link and send one test.</p>";
   leads.forEach(function (L) {
@@ -181,6 +190,8 @@ function desk(shop) {
   });
   const c = link("customer", shop);
   const m = link("missed", shop);
+  document.getElementById("openC").href = c;
+  document.getElementById("openM").href = m;
   document.getElementById("copyC").onclick = function () { copy(c); };
   document.getElementById("copyM").onclick = function () { copy(m); };
   document.getElementById("textLinks").href = "sms:" + digits(shop.phone) + "&body=" + encodeURIComponent(shop.name + " Lead Desk links\nCustomer: " + c + "\nMissed call: " + m);
@@ -232,7 +243,9 @@ function intake(shop, missed) {
     d.leads.unshift(L);
     save(d);
     const body = encodeURIComponent(ticketText(L) + "\nOpen: " + link("lead", { shop: shop, lead: L }));
-    document.getElementById("answers").innerHTML = "<a class='btn primary' href='sms:" + digits(shop.phone) + "&body=" + body + "'>Text the ticket to " + esc(shop.name) + "</a><a class='btn' href='mailto:" + esc(shop.email) + "?subject=" + encodeURIComponent("New lead: " + L.name) + "&body=" + body + "'>Email the ticket</a>";
+    const box = document.getElementById("box");
+    box.innerHTML = "<h2>Owner ticket</h2>" + ticketHtml(L) + "<a class='btn primary' href='sms:" + digits(shop.phone) + "&body=" + body + "'>Text this ticket</a><a class='btn' href='mailto:" + esc(shop.email) + "?subject=" + encodeURIComponent("New lead: " + L.name) + "&body=" + body + "'>Email this ticket</a><a class='btn' id='openDesk' href='" + link("desk", shop) + "'>Open owner desk</a><button class='btn' id='copyTicket'>Copy ticket</button>";
+    document.getElementById("copyTicket").onclick = function () { copy(ticketText(L)); };
   }
 }
 function offer() {
