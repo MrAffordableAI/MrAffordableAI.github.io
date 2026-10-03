@@ -243,9 +243,13 @@ function intake(shop, missed) {
     d.leads.unshift(L);
     save(d);
     const body = encodeURIComponent(ticketText(L) + "\nOpen: " + link("lead", { shop: shop, lead: L }));
+    const mail = "mailto:" + (shop.email || "") + "?subject=" + encodeURIComponent("New lead: " + L.name) + "&body=" + body;
+    const sms = "sms:" + digits(shop.phone) + "&body=" + body;
     const box = document.getElementById("box");
-    box.innerHTML = "<h2>Owner ticket</h2>" + ticketHtml(L) + "<a class='btn primary' href='sms:" + digits(shop.phone) + "&body=" + body + "'>Text this ticket</a><a class='btn' href='mailto:" + esc(shop.email) + "?subject=" + encodeURIComponent("New lead: " + L.name) + "&body=" + body + "'>Email this ticket</a><a class='btn' id='openDesk' href='" + link("desk", shop) + "'>Open owner desk</a><button class='btn' id='copyTicket'>Copy ticket</button>";
+    box.innerHTML = "<h2>Owner ticket</h2>" + ticketHtml(L) + "<p class='muted'>Send goes to " + esc(shop.phone || "the owner phone") + (shop.email ? " and " + esc(shop.email) : "") + ". On a computer, use email. The last tap is in Mail or Messages.</p><a class='btn primary' id='sendMail' href='" + mail + "'>Send email to owner</a><a class='btn' id='sendText' href='" + sms + "'>Send text to owner</a><p class='fine' id='sentNote'></p><a class='btn' id='openDesk' href='" + link("desk", shop) + "'>Open owner desk</a><button class='btn' id='copyTicket'>Copy ticket</button>";
     document.getElementById("copyTicket").onclick = function () { copy(ticketText(L)); };
+    document.getElementById("sendMail").onclick = function () { document.getElementById("sentNote").textContent = "Mail should be open. Hit send there."; };
+    document.getElementById("sendText").onclick = function () { document.getElementById("sentNote").textContent = "On a phone, Messages opens. On a computer, use Send email."; };
   }
 }
 function offer() {
