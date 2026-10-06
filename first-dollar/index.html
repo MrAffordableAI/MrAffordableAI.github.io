@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+title>First dollar — Affordable AI</title>
+<style>
+  :root { color-scheme: light; --ink:#14202b; --muted:#5c6b76; --line:#d7e0e6; --paper:#f4f7f8; --green:#0f6b4c; --green2:#e7f6ef; --amber:#8a5a00; --amber2:#fff6e4; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); }
+  header, main { padding:16px; max-width:680px; margin:0 auto; }
+  header { background:#10261c; color:#fff; }
+  h1 { font-size:28px; line-height:1.1; margin:8px 0; }
+  h2 { font-size:18px; margin:22px 0 8px; }
+  p { margin:8px 0; }
+  .muted { color:var(--muted); }
+  header .muted { color:#c9ddd3; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; margin:10px 0; }
+  .price { font-size:32px; font-weight:700; }
+  .tag { display:inline-block; background:var(--amber2); color:var(--amber); border-radius:99px; padding:2px 8px; font-size:12px; font-weight:700; }
+  button, a.btn { display:block; width:100%; text-align:center; text-decoration:none; border:0; border-radius:12px; padding:14px 12px; font-size:17px; font-weight:700; margin:8px 0; }
+  .call { background:var(--green); color:#fff; }
+  .ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
+  label { display:block; font-size:13px; color:var(--muted); margin-top:8px; }
+  input, textarea, select { width:100%; font:16px/1.3 inherit; padding:10px; border:1px solid var(--line); border-radius:10px; }
+  textarea { min-height:120px; }
+  .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; padding:6px 0; border-bottom:1px solid var(--line); }
+  ol { padding-left:18px; }
+  li { margin:6px 0; }
+  .small { font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="tag">Not another app. A paid offer.</div>
+  <h1>The first dollar is a compliance call.</h1>
+  <p class="muted">Affordable AI is already priced. Region II has about 1,200 affordable units. Money starts when a compliance lead pays for one file.</p>
+</header>
+<main>
+  <section class="card">
+    <div class="tag">Say this price. Do not discount first.</div>
+    <div class="price">$149</div>
+    <p>One tenant file. Correction letter and stacking order. Credited to month one if they keep the desk.</p>
+    <div class="row"><span>Site desk after that</span><b>$199 / property / month</b></div>
+    <div class="row"><span>6 or more properties</span><b>$149 / property / month</b></div>
+    <div class="row"><span>21 or more, annual</span><b>$99 / property / month</b></div>
+    <p class="small">You do not replace Yardi, RealPage, AppFolio, MRI, ResMan, or Entrata. They keep the ledger. You review the file. They stay responsible for the file. This is not an agency determination and not a 50058 or PIC replacement.</p>
+    <a class="btn ghost" href="https://mraffordableai.github.io/affordable-ai/">Open the reviewer on this phone</a>
+  </section>
+
+  <section class="card">
+    <h2>Your callback, once</h2>
+    <label>Name they should ask for</label>
+    <input id="me" value="Eugene" autocomplete="name">
+    <label>Number you will answer</label>
+    <input id="phone" inputmode="tel" placeholder="208-555-0100" autocomplete="tel">
+    <p class="small">Saved on this phone only. It is inserted into the script.</p>
+  </section>
+
+  <h2>Call these first</h2>
+  <p class="small">Public listing contacts. Ask for the compliance lead, not leasing. A site manager cannot buy a company license.</p>
+
+  <article class="card">
+    <b>Tomlinson &amp; Associates — compliance</b>
+    <p>Manages Seapointe Apartments, 1129 Cedar Ave, Lewiston, 50 assisted units. Headquarters in Boise. This is the best first call.</p>
+    <div class="row"><span>Compliance</span><span>compliance@tomlinson-assoc.com</span></div>
+    <div class="row"><span>Published phone</span><span>(208) 343-6438</span></div>
+    <a class="btn call" href="tel:+12083436438">Call Tomlinson</a>
+    <a class="btn ghost" id="mail1">Email the script</a>
+  </article>
+
+  <article class="card">
+    <b>The Housing Company — compliance</b>
+    <p>Nonprofit manager of more than 50 affordable communities. Moscow sites include Camas Village and Hillside Village. Ask for the senior compliance manager.</p>
+    <div class="row"><span>Main</span><span>(800) 361-5181</span></div>
+    <div class="row"><span>Camas Village</span><span>camasvillage@thehousingcompany.org</span></div>
+    <div class="row"><span>Hillside Village</span><span>hillsidevillage@thehousingcompany.org</span></div>
+    <a class="btn call" href="tel:+18003615181">Call The Housing Company</a>
+    <a class="btn ghost" id="mail2">Email the script</a>
+  </article>
+
+  <article class="card">
+    <b>Seapointe site office — only if Boise does not answer</b>
+    <p>Lewiston office. Ask who at Tomlinson signs off on file findings. Do not pitch the site manager as the buyer.</p>
+    <a class="btn call" href="tel:+12087439925">Call Seapointe (208) 743-9925</a>
+  </article>
+
+  <article class="card">
+    <b>Millcreek Apartments, Lewiston</b>
+    <p>IHFA Region II list, May 2026: Tax Credit and Section 8, elderly, 40 units, 419 Miller St.</p>
+    <a class="btn call" href="tel:+12087468137">Call Millcreek (208) 746-8137</a>
+  </article>
+
+  <article class="card">
+    <b>Burrell Street Station, Lewiston</b>
+    <p>IHFA Region II list, May 2026: Tax Credit and Section 8, elderly, 40 units.</p>
+    <a class="btn call" href="tel:+12087430185">Call Burrell (208) 743-0185</a>
+  </article>
+
+  <section class="card">
+    <h2>Script</h2>
+    <textarea id="script" readonly></textarea>
+    <button class="ghost" id="copy" type="button">Copy script</button>
+  </section>
+
+  <section class="card">
+    <h2>After the call</h2>
+    <label>Who you reached</label>
+    <select id="who">
+      <option>Tomlinson compliance</option>
+      <option>Housing Company compliance</option>
+      <option>Seapointe office</option>
+      <option>Millcreek</option>
+      <option>Burrell Street Station</option>
+    </select>
+    <label>What happened</label>
+    <select id="what">
+      <option>No answer — call again tomorrow</option>
+      <option>Reached leasing — got compliance name</option>
+      <option>Sent sample — waiting</option>
+      <option>Paid the $149 file</option>
+      <option>Said no</option>
+    </select>
+    <label>Note</label>
+    <input id="note" placeholder="Name of the compliance lead">
+    <button class="call" id="save" type="button">Save this call</button>
+    <div id="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>What a lot actually is</h2>
+    <div class="row"><span>1 property</span><b>$2,388 / year</b></div>
+    <div class="row"><span>10 properties</span><b>$23,880 / year</b></div>
+    <div class="row"><span>40 properties at $99</span><b>$47,520 / year</b></div>
+    <p class="small">A game, a flirt app, or another demo will not hit those numbers. A company license can. One paid file is the only proof this is a business. If they say no, ask who else reviews files in the valley and call that person the same day.</p>
+  </section>
+  <p class="small">Sources: IHFA Compliance Department regional list, May 2026; Affordable Housing 411 and related listing for Seapointe / Tomlinson; The Housing Company site and Palouse Resource Guide. Contacts go stale. Confirm before you pitch.</p>
+</main>
+<script>
+const me = document.getElementById('me');
+const phone = document.getElementById('phone');
+const script = document.getElementById('script');
+const log = document.getElementById('log');
+function load() {
+  me.value = localStorage.getItem('fd-me') || 'Eugene';
+  phone.value = localStorage.getItem('fd-phone') || '';
+  render();
+  showLog();
+}
+function render() {
+  const n = me.value.trim() || 'Eugene';
+  const p = phone.value.trim() || 'the number I leave';
+  script.value = `Hi, this is ${n} in Lewiston. I am not selling a new property system.\n\nI built a file desk for Tax Credit, HUD, HOME, RD, and Section 202 files. Yardi or whatever you use keeps the ledger. The manager drops the tenant file and gets a correction letter and a stacking order. Tax Credit findings are tagged to Form 8823 lines 11a, 11b, 11f, 11g, and 11i. You stay responsible for the file. This is not an agency determination.\n\nI can review one file for $149 and credit that to the first month if you keep the desk. The desk is $199 a property each month, $149 at six properties, $99 at 21 on an annual contract.\n\nCan I send the compliance lead one sample letter today? My number is ${p}.`;
+}
+function showLog() {
+  const rows = JSON.parse(localStorage.getItem('fd-log') || '[]');
+  log.innerHTML = rows.map(r => `<div class="row"><span>${r.when}<br>${r.who}</span><b>${r.what}</b></div><p class="small">${r.note || ''}</p>`).join('');
+}
+me.oninput = phone.oninput = () => {
+  localStorage.setItem('fd-me', me.value);
+  localStorage.setItem('fd-phone', phone.value);
+  render();
+};
+document.getElementById('copy').onclick = () => navigator.clipboard.writeText(script.value);
+document.getElementById('save').onclick = () => {
+  const rows = JSON.parse(localStorage.getItem('fd-log') || '[]');
+  rows.unshift({ when: new Date().toLocaleString(), who: document.getElementById('who').value, what: document.getElementById('what').value, note: document.getElementById('note').value });
+  localStorage.setItem('fd-log', JSON.stringify(rows.slice(0, 30)));
+  document.getElementById('note').value = '';
+  showLog();
+};
+function mail(to) {
+  const subject = encodeURIComponent('File desk sample for your Tax Credit / HUD files');
+  const body = encodeURIComponent(script.value);
+  location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+}
+document.getElementById('mail1').onclick = () => mail('compliance@tomlinson-assoc.com');
+document.getElementById('mail2').onclick = () => mail('camasvillage@thehousingcompany.org');
+load();
+</script>
+</body>
+</html>
