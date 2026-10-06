@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-title>First dollar — Affordable AI</title>
+<title>First dollar — Affordable AI</title>
 <style>
   :root { color-scheme: light; --ink:#14202b; --muted:#5c6b76; --line:#d7e0e6; --paper:#f4f7f8; --green:#0f6b4c; --green2:#e7f6ef; --amber:#8a5a00; --amber2:#fff6e4; }
   * { box-sizing: border-box; }
@@ -25,6 +25,7 @@ title>First dollar — Affordable AI</title>
   input, textarea, select { width:100%; font:16px/1.3 inherit; padding:10px; border:1px solid var(--line); border-radius:10px; }
   textarea { min-height:120px; }
   .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .ok { background:var(--green2); }
   ol { padding-left:18px; }
   li { margin:6px 0; }
   .small { font-size:13px; color:var(--muted); }
@@ -58,10 +59,10 @@ title>First dollar — Affordable AI</title>
   </section>
 
   <h2>Call these first</h2>
-  <p class="small">Public listing contacts. Ask for the compliance lead, not leasing. A site manager cannot buy a company license.</p>
+  <p class="small">Public listing contacts, May–October 2026. Ask for the compliance lead, not leasing. A site manager cannot buy a company license.</p>
 
   <article class="card">
-    <b>Tomlinson &amp; Associates — compliance</b>
+    <b>Tomlinson & Associates — compliance</b>
     <p>Manages Seapointe Apartments, 1129 Cedar Ave, Lewiston, 50 assisted units. Headquarters in Boise. This is the best first call.</p>
     <div class="row"><span>Compliance</span><span>compliance@tomlinson-assoc.com</span></div>
     <div class="row"><span>Published phone</span><span>(208) 343-6438</span></div>
@@ -128,13 +129,13 @@ title>First dollar — Affordable AI</title>
   </section>
 
   <section class="card">
-    <h2>What a lot actually is</h2>
+    <h2>What “a lot” actually is</h2>
     <div class="row"><span>1 property</span><b>$2,388 / year</b></div>
     <div class="row"><span>10 properties</span><b>$23,880 / year</b></div>
     <div class="row"><span>40 properties at $99</span><b>$47,520 / year</b></div>
-    <p class="small">A game, a flirt app, or another demo will not hit those numbers. A company license can. One paid file is the only proof this is a business. If they say no, ask who else reviews files in the valley and call that person the same day.</p>
+    <p class="small">A game, a flirt app, or another demo will not hit those numbers. A company license can. One paid file is the only proof this is a business. No one owes you the sale. If they say no, ask who else reviews files in the valley and call that person the same day.</p>
   </section>
-  <p class="small">Sources: IHFA Compliance Department regional list, May 2026; Affordable Housing 411 and related listing for Seapointe / Tomlinson; The Housing Company site and Palouse Resource Guide. Contacts go stale. Confirm before you pitch.</p>
+  <p class="small">Sources: IHFA Compliance Department regional list, May 2026; Affordable Housing 411 and HUD-related listing for Seapointe / Tomlinson; The Housing Company site and Palouse Resource Guide; HousingIdaho Highlander listing is a different manager and is not the first call. Contacts go stale. Confirm before you pitch.</p>
 </main>
 <script>
 const me = document.getElementById('me');
@@ -150,7 +151,13 @@ function load() {
 function render() {
   const n = me.value.trim() || 'Eugene';
   const p = phone.value.trim() || 'the number I leave';
-  script.value = `Hi, this is ${n} in Lewiston. I am not selling a new property system.\n\nI built a file desk for Tax Credit, HUD, HOME, RD, and Section 202 files. Yardi or whatever you use keeps the ledger. The manager drops the tenant file and gets a correction letter and a stacking order. Tax Credit findings are tagged to Form 8823 lines 11a, 11b, 11f, 11g, and 11i. You stay responsible for the file. This is not an agency determination.\n\nI can review one file for $149 and credit that to the first month if you keep the desk. The desk is $199 a property each month, $149 at six properties, $99 at 21 on an annual contract.\n\nCan I send the compliance lead one sample letter today? My number is ${p}.`;
+  script.value = `Hi, this is ${n} in Lewiston. I am not selling a new property system.
+
+I built a file desk for Tax Credit, HUD, HOME, RD, and Section 202 files. Yardi or whatever you use keeps the ledger. The manager drops the tenant file and gets a correction letter and a stacking order. Tax Credit findings are tagged to Form 8823 lines 11a, 11b, 11f, 11g, and 11i. You stay responsible for the file. This is not an agency determination.
+
+I can review one file for $149 and credit that to the first month if you keep the desk. The desk is $199 a property each month, $149 at six properties, $99 at 21 on an annual contract.
+
+Can I send the compliance lead one sample letter today? My number is ${p}.`;
 }
 function showLog() {
   const rows = JSON.parse(localStorage.getItem('fd-log') || '[]');
