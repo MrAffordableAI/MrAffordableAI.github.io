@@ -93,13 +93,808 @@
   </main>
   <footer><p>Specialist aid. Not a determination by the allocating agency, HUD, USDA, or the IRS.</p></footer>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="rules.js"></script>
-  <script src="states.js"></script>
-  <script src="engine.js"></script>
-  <script src="bolt.js"></script>
-  <script src="readfile.js"></script>
-  <script src="reason.js"></script>
-  <script src="specialist.js"></script>
-  <script src="app.js"></script>
+<script>
+/* Affordable AI file rules. Sources are named in each item.
+   State manuals control when they are stricter than the federal floor. */
+const RULES = {
+  hotma2026: {
+    passbook: 0.004,
+    assetSelfCert: 52787,
+    assetLimitation: 105574,
+    dependentDeduction: 500,
+    elderlyDeduction: 550,
+    source: "HUD CY2026 inflation-adjusted values, effective January 1, 2026"
+  },
+  documents: [
+    { id: "application", label: "Rental application, dated", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/rental application/i, /application date/i] },
+    { id: "questionnaire", label: "Household questionnaire / income and asset form", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/household questionnaire/i, /income and asset/i, /income\/asset/i] },
+    { id: "tic", label: "Tenant Income Certification (TIC)", programs: ["lihtc", "home"], detect: [/tenant income certification/i, /\bTIC\b/, /IHFA TIC/i] },
+    { id: "f50059", label: "HUD 50059", programs: ["hud", "s202"], detect: [/50059/] },
+    { id: "rd3560", label: "RD 3560-8 Tenant Certification", programs: ["rd"], detect: [/3560-8/, /tenant certification/i] },
+    { id: "student", label: "Certification of student status", programs: ["lihtc", "home"], detect: [/student status/i, /certification of student/i] },
+    { id: "homeCert", label: "HOME income certification (required in addition to the TIC on a layered unit)", programs: ["home"], detect: [/HOME certification/i, /HOME income certification/i] },
+    { id: "incomeVer", label: "Income verifications for every source on the certification", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/pay stub/i, /paystub/i, /earnings statement/i, /social security/i, /benefit letter/i] },
+    { id: "calcTape", label: "Income calculation worksheet or tape", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/calculation worksheet/i, /calculation tape/i, /income calculation/i] },
+    { id: "assetCert", label: "Asset self-certification or third-party asset verification", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/asset self-cert/i, /asset certification/i, /bank statement/i] },
+    { id: "release", label: "Signed release / HUD-9887 consent where required", programs: ["hud", "s202", "lihtc", "home", "rd"], detect: [/release of information/i, /9887/] },
+    { id: "eiv", label: "EIV Income Report and Existing Tenant Search", programs: ["hud", "s202"], detect: [/\bEIV\b/, /existing tenant search/i] },
+    { id: "lease", label: "Signed lease and required addenda", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/\blease\b/i] },
+    { id: "vawa", label: "VAWA notice and lease addendum (HUD-5380 / 91067)", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/VAWA/i, /91067/, /5380/] },
+    { id: "inspection", label: "Move-in or annual unit inspection", programs: ["lihtc", "hud", "home", "rd", "s202"], detect: [/move-in inspection/i, /unit inspection/i] },
+    { id: "age", label: "Proof of age (Section 202 head of household)", programs: ["s202"], detect: [/proof of age/i, /birth certificate/i, /driver'?s license/i] },
+    { id: "citizenship", label: "Citizenship / immigration declaration (Section 214, HUD)", programs: ["hud"], detect: [/citizenship/i, /section 214/i, /declaration of/i] }
+  ],
+  stacking: {
+    ID: {
+      name: "Idaho Housing and Finance Association electronic file stacking order",
+      revised: "Revised October 2025",
+      movein: [
+        "IHFA Tenant Income Certification",
+        "Household questionnaire (income and asset form)",
+        "Certification of student status \u2014 LIHTC and HOME each need their own certification on a layered unit",
+        "Income source documents or third-party verifications, in the order listed on the questionnaire",
+        "COLA letter, when Social Security or similar income has a known increase",
+        "Clarification page immediately after any incomplete or unclear verification",
+        "Calculation worksheet or tape for every income source",
+        "Child support certification and Health & Welfare payment history, when applicable",
+        "Student financial assistance certification, when applicable",
+        "Public assistance verification, when applicable",
+        "Asset documents",
+        "Household asset self-certification",
+        "Over-asset-limitation worksheet, when applicable",
+        "Signed lease, program addenda, VAWA addendum",
+        "Move-in inspection"
+      ],
+      note: "IHFA: every amount on the TIC needs verification. Verifications and the application are valid for 120 days. Student status is certified at move-in and every year, including at 100% tax credit properties that do not recertify income."
+    },
+    OTHER: {
+      name: "Model tenant file used by state HFA manuals",
+      revised: "Federal floor plus typical HFA practice",
+      movein: [
+        "Application with date and time",
+        "Program income certification signed by all adults and the owner representative (TIC, HUD 50059, or RD 3560-8)",
+        "Student status certification where Tax Credit or HOME applies",
+        "Release of information",
+        "Third-party or tenant-provided source documents for each income and asset item",
+        "Calculation worksheet",
+        "Clarifications for gaps, and a file note if a lower verification level was used",
+        "Lease of at least six months for Tax Credit, with VAWA addendum",
+        "Move-in inspection and screening record"
+      ],
+      note: "Use the allocating agency's current compliance manual if it is stricter than this model."
+    }
+  }
+};
+
+const PROGRAM_LABEL = {
+  lihtc: "Tax Credit",
+  hud: "HUD",
+  home: "HOME",
+  rd: "RD",
+  s202: "Section 202"
+};
+
+</script>
+<script>
+RULES.states = [
+  { code: "AL", name: "Alabama", agency: "Alabama Housing Finance Authority" },
+  { code: "AK", name: "Alaska", agency: "Alaska Housing Finance Corporation" },
+  { code: "AZ", name: "Arizona", agency: "Arizona Department of Housing" },
+  { code: "AR", name: "Arkansas", agency: "Arkansas Development Finance Authority" },
+  { code: "CA", name: "California", agency: "California Tax Credit Allocation Committee" },
+  { code: "CO", name: "Colorado", agency: "Colorado Housing and Finance Authority" },
+  { code: "CT", name: "Connecticut", agency: "Connecticut Housing Finance Authority" },
+  { code: "DE", name: "Delaware", agency: "Delaware State Housing Authority" },
+  { code: "FL", name: "Florida", agency: "Florida Housing Finance Corporation" },
+  { code: "GA", name: "Georgia", agency: "Georgia Department of Community Affairs" },
+  { code: "HI", name: "Hawaii", agency: "Hawaii Housing Finance and Development Corporation" },
+  { code: "ID", name: "Idaho", agency: "Idaho Housing and Finance Association" },
+  { code: "IL", name: "Illinois", agency: "Illinois Housing Development Authority" },
+  { code: "IN", name: "Indiana", agency: "Indiana Housing and Community Development Authority" },
+  { code: "IA", name: "Iowa", agency: "Iowa Finance Authority" },
+  { code: "KS", name: "Kansas", agency: "Kansas Housing Resources Corporation" },
+  { code: "KY", name: "Kentucky", agency: "Kentucky Housing Corporation" },
+  { code: "LA", name: "Louisiana", agency: "Louisiana Housing Corporation" },
+  { code: "ME", name: "Maine", agency: "Maine State Housing Authority" },
+  { code: "MD", name: "Maryland", agency: "Maryland Department of Housing and Community Development" },
+  { code: "MA", name: "Massachusetts", agency: "Massachusetts Executive Office of Housing and Livable Communities" },
+  { code: "MI", name: "Michigan", agency: "Michigan State Housing Development Authority" },
+  { code: "MN", name: "Minnesota", agency: "Minnesota Housing" },
+  { code: "MS", name: "Mississippi", agency: "Mississippi Home Corporation" },
+  { code: "MO", name: "Missouri", agency: "Missouri Housing Development Commission" },
+  { code: "MT", name: "Montana", agency: "Montana Board of Housing" },
+  { code: "NE", name: "Nebraska", agency: "Nebraska Investment Finance Authority" },
+  { code: "NV", name: "Nevada", agency: "Nevada Housing Division" },
+  { code: "NH", name: "New Hampshire", agency: "New Hampshire Housing Finance Authority" },
+  { code: "NJ", name: "New Jersey", agency: "New Jersey Housing and Mortgage Finance Agency" },
+  { code: "NM", name: "New Mexico", agency: "New Mexico Mortgage Finance Authority" },
+  { code: "NY", name: "New York", agency: "New York State Homes and Community Renewal" },
+  { code: "NC", name: "North Carolina", agency: "North Carolina Housing Finance Agency" },
+  { code: "ND", name: "North Dakota", agency: "North Dakota Housing Finance Agency" },
+  { code: "OH", name: "Ohio", agency: "Ohio Housing Finance Agency" },
+  { code: "OK", name: "Oklahoma", agency: "Oklahoma Housing Finance Agency" },
+  { code: "OR", name: "Oregon", agency: "Oregon Housing and Community Services" },
+  { code: "PA", name: "Pennsylvania", agency: "Pennsylvania Housing Finance Agency" },
+  { code: "RI", name: "Rhode Island", agency: "Rhode Island Housing" },
+  { code: "SC", name: "South Carolina", agency: "South Carolina State Housing Finance and Development Authority" },
+  { code: "SD", name: "South Dakota", agency: "South Dakota Housing Development Authority" },
+  { code: "TN", name: "Tennessee", agency: "Tennessee Housing Development Agency" },
+  { code: "TX", name: "Texas", agency: "Texas Department of Housing and Community Affairs" },
+  { code: "UT", name: "Utah", agency: "Utah Housing Corporation" },
+  { code: "VT", name: "Vermont", agency: "Vermont Housing Finance Agency" },
+  { code: "VA", name: "Virginia", agency: "Virginia Housing" },
+  { code: "WA", name: "Washington", agency: "Washington State Housing Finance Commission" },
+  { code: "WV", name: "West Virginia", agency: "West Virginia Housing Development Fund" },
+  { code: "WI", name: "Wisconsin", agency: "Wisconsin Housing and Economic Development Authority" },
+  { code: "WY", name: "Wyoming", agency: "Wyoming Community Development Authority" }
+];
+
+function agencyName(code) {
+  const row = RULES.states.find((s) => s.code === code);
+  return row ? row.agency : "the state allocating agency";
+}
+
+function stackingFor(code) {
+  if (code === "ID") return RULES.stacking.ID;
+  const agency = agencyName(code);
+  return {
+    name: agency + " tenant file",
+    revised: "Federal floor for this state. Use the current " + agency + " compliance manual and its forms if they are stricter.",
+    movein: [
+      agency + " income certification, or the HUD 50059 or RD 3560-8 where that program accepts it",
+      "Household application and income and asset questionnaire",
+      "Student status certification where Tax Credit or HOME applies",
+      "Income and asset source documents in the order listed on the questionnaire",
+      "Calculation worksheet for every figure on the certification",
+      "Clarification page behind any incomplete verification",
+      "Signed lease and program addenda, including VAWA",
+      "Move-in inspection"
+    ],
+    note: "Local suballocators, including Chicago, New York City, and some Minnesota agencies, use their own manual when they monitor the property. HUD uses a 120-day verification window. Confirm the window in the " + agency + " manual."
+  };
+}
+
+RULES.states.forEach((s) => {
+  if (s.code !== "ID") RULES.stacking[s.code] = stackingFor(s.code);
+});
+
+(function fillStates() {
+  const sel = document.getElementById("state");
+  if (!sel) return;
+  sel.innerHTML = RULES.states.map((s) => "<option value=\"" + s.code + "\">" + s.name + " \u2014 " + s.agency + "</option>").join("");
+  sel.value = "ID";
+})();
+
+</script>
+<script>
+function daysBetween(a, b) {
+  if (!a || !b) return null;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  if (Number.isNaN(ms)) return null;
+  return Math.round(ms / 86400000);
+}
+
+function money(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "\u2014";
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+function reviewFile(input) {
+  const findings = [];
+  const programs = input.programs.length ? input.programs : ["lihtc"];
+  const has = (id) => programs.includes(id);
+  const docOn = (id) => !!input.docs[id];
+  const add = (item) => findings.push(item);
+  const hotma = RULES.hotma2026;
+
+  if (has("lihtc") && !docOn("tic")) {
+    add({ severity: "critical", program: "Tax Credit", title: "Tenant Income Certification is missing", found: "No TIC was detected or confirmed.", should: "The file needs a TIC signed by every adult and by the owner representative, with each income and asset figure supported.", correction: "Complete the HFA TIC, obtain all adult signatures and the owner signature, and file it on top of the certification packet.", cite: "IRC \u00a742; IRS Form 8823 Guide; IHFA stacking order (Oct 2025) if this is an Idaho file" });
+  }
+  if (has("lihtc") && docOn("tic") && !input.ownerSigned) {
+    add({ severity: "needed", program: "Tax Credit", title: "Owner signature is missing on the certification", found: "The TIC is in the file, but the owner or manager signature was not confirmed.", should: "The owner representative signs the TIC after reviewing the verifications.", correction: "Sign and date the TIC. Do not backdate. If the effective date has passed, document the date the signature was actually obtained.", cite: "State HFA TIC instructions; IRS 8823 Guide tenant-file documentation" });
+  }
+  if ((has("lihtc") || has("home") || has("hud")) && docOn("tic") && !input.adultsSigned) {
+    add({ severity: "needed", program: "All selected", title: "Not every adult signed the certification", found: "Adult signatures were not confirmed.", should: "Each adult household member signs the income certification.", correction: "Obtain the missing adult signatures. A signature dated after the effective date needs a file note.", cite: "HUD Handbook 4350.3; HFA TIC instructions" });
+  }
+  if ((has("lihtc") || has("home")) && !docOn("student")) {
+    add({ severity: "critical", program: has("lihtc") ? "Tax Credit" : "HOME", title: "Student status certification is missing", found: "No student status certification was in the file.", should: "Student status is certified at move-in and annually, even at a 100% tax credit property that does not recertify income. A LIHTC + HOME unit needs both certifications.", correction: "Have the household complete the student status form. If anyone is a full-time student, add school verification or the applicable exception.", cite: "IRC \u00a742(i)(3)(D); IHFA compliance manual \u2014 student status required annually" });
+  }
+  if (has("lihtc") && input.allFt && !input.studentException) {
+    add({ severity: "critical", program: "Tax Credit", title: "Household appears ineligible under the full-time student rule", found: "The household is marked entirely full-time students, and no Section 42 exception is documented.", should: "A Tax Credit household cannot be made up entirely of full-time students unless an exception is in the file: married filing jointly, single parent with a dependent child, TANF, Job Corps, or former foster youth.", correction: "Document an exception with third-party support, or the unit is not a qualified low-income unit. Do not count the unit in the applicable fraction until this is cured.", cite: "IRC \u00a742(i)(3)(D); IRS 8823 Guide Chapter 17" });
+  }
+  if (has("home") && has("lihtc") && !docOn("homeCert")) {
+    add({ severity: "needed", program: "HOME", title: "HOME certification is missing on a layered unit", found: "Tax Credit paperwork is present or selected, but a separate HOME certification was not confirmed.", should: "IHFA requires both certifications when the unit is LIHTC and HOME.", correction: "Complete the HOME income certification and file it with the TIC. Do not rely on the TIC alone.", cite: "IHFA electronic file stacking order, revised October 2025; 24 CFR 92.203" });
+  }
+  if (has("hud") && !docOn("f50059")) {
+    add({ severity: "critical", program: "HUD", title: "HUD 50059 is missing", found: "No 50059 was detected.", should: "A HUD-assisted household file has a 50059 for the certification effective date, matching the verifications.", correction: "Produce the 50059 from the certified income and assets. File the signed 50059 with the backup.", cite: "HUD Handbook 4350.3" });
+  }
+  if ((has("hud") || has("s202")) && input.certType !== "movein" && !docOn("eiv")) {
+    add({ severity: "needed", program: "HUD", title: "EIV report is missing", found: "No EIV Income Report was confirmed for this recertification.", should: "HUD multifamily uses EIV at recertification. EIV is not a Tax Credit verification and must not be used as the income source for a LIHTC-only file.", correction: "Print the EIV Income Report within the allowed window, resolve discrepancies, and file the reports in the HUD section of the file. Keep EIV out of a tax-credit-only packet.", cite: "HUD Notice H 2023-10 verification hierarchy, Level 6; HUD EIV instructions" });
+  }
+  if (has("rd") && !docOn("rd3560")) {
+    add({ severity: "critical", program: "RD", title: "RD 3560-8 is missing", found: "No Tenant Certification form was confirmed.", should: "An RD file uses Form RD 3560-8, supported by income and asset verifications.", correction: "Complete Form RD 3560-8 for this effective date and file the verifications behind it.", cite: "7 CFR 3560; RD HB-2-3560" });
+  }
+  if (has("s202") && !docOn("age")) {
+    add({ severity: "needed", program: "Section 202", title: "Proof of age is missing", found: "No age document was confirmed.", should: "Section 202 occupancy requires proof that the qualifying member is 62 or older, unless the property is an 811 or another disability program.", correction: "File a birth certificate, passport, or other age evidence. Do not use a document that shows a full Social Security number if a partial number will do.", cite: "Section 202 program eligibility; HUD Handbook 4350.3" });
+  }
+  if (has("s202") && input.headAge && input.headAge < 62) {
+    add({ severity: "critical", program: "Section 202", title: "Head of household is under 62", found: "Age on the review sheet is " + input.headAge + ".", should: "A Section 202 household is qualified by an elderly person 62 or older, unless this is an 811 or another designated disability property.", correction: "Confirm the program. If this is 202 elderly housing, the household is not eligible. If it is 811, change the program selection and file the disability documentation.", cite: "Section 202 of the Housing Act of 1959" });
+  }
+  if (!docOn("incomeVer")) {
+    add({ severity: "critical", program: "All selected", title: "Income verification is missing", found: "No paystubs, benefit letters, or other income source documents were confirmed.", should: "Every amount on the certification has backup. Preferred order: non-EIV upfront verification, tenant-provided source documents, written third-party form, oral verification with a file note, then self-certification only as a last resort.", correction: "Collect source documents for each income item. If a document is unclear, put a clarification on the next page. Include the calculation worksheet.", cite: "HUD Notice H 2023-10 Table J-2; IHFA stacking order verification hierarchy" });
+  }
+  if (!docOn("calcTape")) {
+    add({ severity: "needed", program: "All selected", title: "Calculation worksheet is missing", found: "No income calculation tape or worksheet was confirmed.", should: "The file shows the math from the source document to the annual figure on the certification.", correction: "Add a worksheet that shows pay frequency, the stubs used, and the annualized amount. File it directly behind the verification.", cite: "IHFA electronic file stacking order, October 2025" });
+  }
+  if (!docOn("assetCert")) {
+    add({ severity: "needed", program: "All selected", title: "Asset backup is missing", found: "No asset self-certification or bank statement was confirmed.", should: "If net family assets are at or under the 2026 self-certification threshold of $52,787, a self-certification can be accepted where HOTMA applies. Above that, verify assets. A checking account needs at least one statement showing the current balance when verification is required.", correction: "File the asset self-certification or the current statement. Impute income only on assets with no determinable income, and only when net assets exceed the threshold.", cite: "HUD CY2026 inflation-adjusted values; 24 CFR 5.609; HUD Notice H 2023-10" });
+  }
+  if ((has("hud") || has("home") || has("lihtc")) && !docOn("vawa")) {
+    add({ severity: "needed", program: "VAWA", title: "VAWA documents are missing", found: "No VAWA notice or lease addendum was confirmed.", should: "The file includes the notice of occupancy rights and the VAWA lease addendum.", correction: "Add HUD-5380 and the VAWA lease addendum (HUD-91067) to the lease packet and document that the household received them.", cite: "Violence Against Women Act housing provisions; HUD-5380; HUD-91067" });
+  }
+  if (!docOn("lease")) {
+    add({ severity: "critical", program: "All selected", title: "Lease is missing", found: "No lease was detected.", should: "A signed lease covers the certification period. Tax Credit initial term is at least six months. HOME is generally a one-year term unless both parties agree to a shorter term, and prohibited lease clauses cannot be used.", correction: "Execute the program lease and addenda. Replace a short Tax Credit lease before the unit is treated as qualified.", cite: "IRC \u00a742(i)(3) transient rule; 24 CFR 92.253" });
+  }
+  const leaseDays = daysBetween(input.leaseStart, input.leaseEnd);
+  if (has("lihtc") && input.certType === "movein" && leaseDays !== null && leaseDays < 180) {
+    add({ severity: "critical", program: "Tax Credit", title: "Initial lease is shorter than six months", found: "Lease runs " + input.leaseStart + " to " + input.leaseEnd + " (" + leaseDays + " days).", should: "A Tax Credit unit cannot be used on a transient basis. The initial lease term is at least six months, unless a recognized transitional-housing exception applies.", correction: "Execute an addendum or a new lease with a term of at least six months. Keep the short lease in the file as the error, with the cure behind it.", cite: "IRC \u00a742(i)(3); IRS 8823 Guide" });
+  }
+  if (input.oldestVer && input.effective) {
+    const age = daysBetween(input.oldestVer, input.effective);
+    if (age !== null && age > 120) {
+      add({ severity: "critical", program: input.state === "ID" ? "IHFA" : "HFA / HUD", title: "Verification is older than 120 days", found: "Oldest verification " + input.oldestVer + " is " + age + " days before effective date " + input.effective + ".", should: "IHFA treats verifications and the application as valid for 120 days. HUD uses a 120-day verification window. A stale document does not support the certification.", correction: "Obtain current source documents dated within 120 days of the effective date and recalculate. Note why the old document was rejected.", cite: "IHFA LIHTC compliance manual; HUD Handbook 4350.3" });
+    }
+  }
+  const annual = Number(input.wageIncome || 0) + Number(input.otherIncome || 0) + Number(input.assetIncome || 0);
+  const tic = Number(input.ticIncome || 0);
+  if (tic && Math.abs(annual - tic) > 1) {
+    add({ severity: "critical", program: "Income math", title: "Certification income does not match the worksheet", found: "Certification shows " + money(tic) + ". Source documents support " + money(annual) + ".", should: "The figure on the TIC, 50059, or 3560-8 equals the worksheet. Wages are annualized by pay frequency (biweekly times 26, weekly times 52), not by multiplying one stub by 12.", correction: "Redo the worksheet, correct the certification, and have the household and owner sign the corrected form. Do not leave both figures in the file without a superseded stamp on the wrong one.", cite: "HUD Handbook 4350.3 Chapter 5; IHFA calculation-tape requirement" });
+  }
+  if (input.incomeLimit && annual > Number(input.incomeLimit) && input.certType === "movein") {
+    add({ severity: "critical", program: "Eligibility", title: "Household is over the income limit at move-in", found: money(annual) + " is over the entered limit of " + money(input.incomeLimit) + ".", should: "A household must be at or under the program limit that applies to this unit on the effective date. Layered units use the most restrictive limit.", correction: "Stop treating the unit as qualified. If the limit entered is wrong, replace it with the county limit for the household size and effective date and review again.", cite: "IRC \u00a742(g); 24 CFR 92.252; 7 CFR 3560" });
+  }
+  if (input.incomeLimit && input.certType === "annual" && annual > Number(input.incomeLimit) * 1.4 && has("lihtc")) {
+    add({ severity: "needed", program: "Tax Credit", title: "Available Unit Rule may apply", found: "Recertification income " + money(annual) + " is over 140% of the current limit (" + money(Number(input.incomeLimit) * 1.4) + ").", should: "If household income goes over 140% of the current income limit, the next available unit of comparable or smaller size in the building must be rented to a qualified household.", correction: "Flag the building's next available unit. Document the 140% test. This is not by itself a move-out.", cite: "IRC \u00a742(g)(2)(D); IRS 8823 Guide Available Unit Rule" });
+  }
+  const gross = Number(input.tenantRent || 0) + Number(input.ua || 0);
+  if (input.maxRent && gross > Number(input.maxRent) + 0.009) {
+    add({ severity: "critical", program: "Rent", title: "Gross rent is over the program maximum", found: "Tenant rent " + money(input.tenantRent) + " plus utility allowance " + money(input.ua) + " is " + money(gross) + ". Maximum entered is " + money(input.maxRent) + ".", should: "Gross rent is tenant rent plus the utility allowance, and it cannot exceed the Tax Credit, HOME, or other program max for that unit.", correction: "Reduce tenant rent so gross rent is at or under the max, refund any overcharge, and file the rent-limit sheet used for this effective date.", cite: "IRC \u00a742(g)(2); 24 CFR 92.252" });
+  }
+  if (Number(input.stubCount) > 0 && Number(input.stubCount) < 4 && Number(input.wageIncome) > 0) {
+    add({ severity: "watch", program: "Income", title: "Too few paystubs to annualize wages", found: input.stubCount + " paystub(s) confirmed.", should: "Use enough consecutive stubs to cover the pay frequency. Four to six current stubs is the usual file for biweekly wages. One stub times 12 is not an annual wage.", correction: "Add consecutive stubs inside the 120-day window and show the average times the annual pay count on the worksheet.", cite: "HUD Notice H 2023-10; HFA calculation practice" });
+  }
+  if (input.certType === "annual" && input.priorCert && input.effective) {
+    const gap = daysBetween(input.priorCert, input.effective);
+    if (gap !== null && gap > 366) {
+      add({ severity: "needed", program: "Recertification", title: "Annual certification is late", found: gap + " days between " + input.priorCert + " and " + input.effective + ".", should: "Income certifications are completed at least every 12 months. RD rental assistance and HUD assistance can be affected by a late recertification. Start the packet about 120 days before the anniversary.", correction: "Complete the late certification now, document the reason, and reset the anniversary only if the program allows it. Notify RD or the contract administrator if assistance was billed on an expired cert.", cite: "HUD Handbook 4350.3; 7 CFR 3560.152; IHFA recertification timing" });
+    }
+  }
+  if (Number(input.assets) > hotma.assetSelfCert && !docOn("assetCert")) {
+    add({ severity: "needed", program: "HOTMA", title: "Assets are over the self-certification threshold", found: "Net assets " + money(input.assets) + " exceed " + money(hotma.assetSelfCert) + ".", should: "Self-certification is not enough above the 2026 threshold. Verify the assets. Impute at the 0.40% passbook rate only where actual income cannot be determined.", correction: "Obtain current statements and add the imputation worksheet if any asset has no determinable income.", cite: hotma.source });
+  }
+  if (!docOn("inspection") && input.certType === "movein") {
+    add({ severity: "watch", program: "Unit", title: "Move-in inspection is missing", found: "No inspection was confirmed.", should: "The move-in inspection is in the tenant file, signed, and dated on or before move-in.", correction: "File the signed move-in inspection. If it was done and not filed, add it. If it was not done, complete one and note the date gap.", cite: "HUD Handbook 4350.3; HFA tenant-file checklists" });
+  }
+  const required = RULES.documents.filter((d) => d.programs.some((p) => programs.includes(p)));
+  required.forEach((d) => {
+    if (docOn(d.id)) add({ severity: "pass", program: "File", title: d.label, found: "Present.", should: "Keep it in stacking order.", correction: "No correction.", cite: "File checklist" });
+  });
+  const rank = { critical: 0, needed: 1, watch: 2, pass: 3 };
+  findings.sort((a, b) => rank[a.severity] - rank[b.severity]);
+  const counts = findings.reduce((acc, f) => { acc[f.severity] = (acc[f.severity] || 0) + 1; return acc; }, {});
+  return { findings, counts, programs };
+}
+
+function buildLetter(input, result) {
+  const open = result.findings.filter((f) => f.severity !== "pass");
+  const when = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const programs = result.programs.map((id) => PROGRAM_LABEL[id] || id).join(", ");
+  const lines = open.map((f, i) => (i + 1) + ". [" + f.severity.toUpperCase() + "] " + f.title + "\nWhat is in the file: " + f.found + "\nWhat the file should contain: " + f.should + "\nManager correction: " + f.correction + "\nAuthority: " + f.cite);
+  return "AFFORDABLE AI FILE REVIEW\nCorrection notice for the site manager\n" + when + "\n\nProperty: " + (input.property || "\u2014") + "\nUnit: " + (input.unit || "\u2014") + "\nHousehold: " + (input.head || "\u2014") + "\nManager: " + (input.manager || "\u2014") + "\nPrograms: " + programs + "\nCertification: " + input.certType + "\nEffective date: " + (input.effective || "\u2014") + "\n\nThis file is not ready for a compliance review until the items below are corrected. Do not alter a file after an agency audit notice has been sent.\n\n" + (lines.join("\n\n") || "No corrections. The checked documents and figures support this certification.") + "\n\nHow the corrected file should be stacked\n" + stackFor(input.state).map((item, i) => (i + 1) + ". " + item).join("\n") + "\n\nThis notice is a specialist aid. It is not an IHFA, HUD, USDA, or IRS determination. Limits must be the county limits for the effective date.";
+}
+
+function stackFor(state) {
+  const pack = RULES.stacking[state] || RULES.stacking.OTHER;
+  return pack.movein;
+}
+
+</script>
+<script>
+/* Bolt-on intake. Yardi, RealPage, AppFolio, MRI, and ResMan stay the system of record.
+   A manager pastes the certification row or drops the file. No ledger is replaced. */
+const E8823 = {
+  income: "8823 line 11a — household income over the limit at move-in",
+  aur: "8823 line 11b / 1.42-15 — Available Unit Rule",
+  student: "8823 line 11f — household is full-time students with no exception",
+  rent: "8823 line 11g — gross rent over the tax credit limit",
+  file: "8823 line 11i — file does not support the certification"
+};
+
+function tag8823(finding) {
+  const text = (finding.title + " " + finding.should).toLowerCase();
+  let line = E8823.file;
+  if (/student/.test(text)) line = E8823.student;
+  else if (/140%|available unit/.test(text)) line = E8823.aur;
+  else if (/rent/.test(text)) line = E8823.rent;
+  else if (/income limit|over the limit/.test(text)) line = E8823.income;
+  if (finding.program === "Tax Credit" || /tax credit|lihtc|student|rent/.test(text)) {
+    finding.cite = finding.cite + "; " + line;
+  }
+  return finding;
+}
+
+if (typeof reviewFile === "function") {
+  const baseReview = reviewFile;
+  reviewFile = function (input) {
+    const result = baseReview(input);
+    result.findings = result.findings.map(tag8823);
+    return result;
+  };
+}
+
+function setVal(id, value) {
+  const el = document.getElementById(id);
+  if (!el || value == null || value === "") return;
+  el.value = value;
+}
+
+function applyBolt(text) {
+  const lines = text.split(/\n|\r/).map((line) => line.trim()).filter(Boolean);
+  const bag = {};
+  lines.forEach((line) => {
+    const parts = line.split(/[:=\t]/);
+    if (parts.length < 2) return;
+    bag[parts[0].trim().toLowerCase()] = parts.slice(1).join(":").trim();
+  });
+  const pick = (names) => {
+    for (const name of names) if (bag[name]) return bag[name];
+    return "";
+  };
+  setVal("property", pick(["property", "property name", "community"]));
+  setVal("unit", pick(["unit", "unit number", "bldg unit"]));
+  setVal("head", pick(["head", "head of household", "resident", "tenant"]));
+  setVal("effective", pick(["effective", "effective date", "cert date"]));
+  setVal("priorCert", pick(["prior cert", "prior cert date", "last cert"]));
+  setVal("incomeLimit", pick(["income limit", "ami limit", "max income"]).replace(/[$,]/g, ""));
+  setVal("ticIncome", pick(["tic income", "50059 income", "certified income", "annual income"]).replace(/[$,]/g, ""));
+  setVal("wageIncome", pick(["wages", "wage income", "employment income"]).replace(/[$,]/g, ""));
+  setVal("otherIncome", pick(["other income"]).replace(/[$,]/g, ""));
+  setVal("assets", pick(["assets", "net family assets", "cash value"]).replace(/[$,]/g, ""));
+  setVal("assetIncome", pick(["asset income"]).replace(/[$,]/g, ""));
+  setVal("tenantRent", pick(["tenant rent", "rent", "resident rent"]).replace(/[$,]/g, ""));
+  setVal("ua", pick(["utility allowance", "ua"]).replace(/[$,]/g, ""));
+  setVal("maxRent", pick(["max rent", "max program rent", "gross rent limit"]).replace(/[$,]/g, ""));
+  setVal("leaseStart", pick(["lease start", "lease begin"]));
+  setVal("leaseEnd", pick(["lease end", "lease expires"]));
+  setVal("members", pick(["household members", "members", "hh size"]));
+  const state = pick(["state"]);
+  const stateSel = document.getElementById("state");
+  if (stateSel && state) {
+    const code = state.trim().toUpperCase();
+    if ([...stateSel.options].some((opt) => opt.value === code)) stateSel.value = code;
+  }
+  const programs = pick(["programs", "program"]).toLowerCase();
+  if (programs) {
+    document.querySelectorAll("input[name=program]").forEach((box) => {
+      box.checked = programs.indexOf(box.value) >= 0 || /tax credit|lihtc/.test(programs) && box.value === "lihtc" || /section 202|202/.test(programs) && box.value === "s202";
+    });
+    if (typeof renderDocs === "function") renderDocs();
+  }
+  const note = document.getElementById("boltNote");
+  if (note) note.textContent = "Certification row loaded. Drop the file next. Yardi stays the system of record.";
+}
+
+function mountBolt() {
+  const host = document.getElementById("setup");
+  if (!host || document.getElementById("boltBox")) return;
+  const box = document.createElement("div");
+  box.id = "boltBox";
+  box.innerHTML = "<h3>Bolt-on from Yardi or another system</h3><p class=\"hint\">Paste a certification row from Voyager, Breeze, RealPage, AppFolio, MRI, or ResMan. The ledger stays there. This desk reviews the file.</p><textarea id=\"boltPaste\" rows=\"5\" placeholder=\"Property: Clearwater Court\nUnit: 204\nState: ID\nPrograms: lihtc, home\nEffective: 2026-03-01\nTIC income: 10110\nIncome limit: 42000\nTenant rent: 890\nUA: 75\nMax rent: 900\"></textarea><p><button type=\"button\" class=\"text-btn\" id=\"boltApply\">Load this row</button> <a href=\"yardi.html\">Why this is the bolt-on</a></p><p class=\"hint\" id=\"boltNote\"></p>";
+  host.appendChild(box);
+  document.getElementById("boltApply").addEventListener("click", () => applyBolt(document.getElementById("boltPaste").value));
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountBolt);
+else mountBolt();
+
+</script>
+<script>
+/* Reads the text layer of a dropped file. This is not a reasoning model.
+   It fills blank fields from what the PDF actually says, then the rules engine runs. */
+function moneyIn(text, label) {
+  const re = new RegExp(label + "[^\d]{0,20}\\$?\\s*([\\d,]+(?:\\.\\d{1,2})?)", "i");
+  const hit = text.match(re);
+  return hit ? hit[1].replace(/,/g, "") : "";
+}
+
+function isoDate(text) {
+  const mdy = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (mdy) return mdy[3] + "-" + mdy[1].padStart(2, "0") + "-" + mdy[2].padStart(2, "0");
+  const iso = text.match(/(20\d{2}-\d{2}-\d{2})/);
+  return iso ? iso[1] : "";
+}
+
+function fillBlank(id, value) {
+  const el = document.getElementById(id);
+  if (!el || !value || el.value) return;
+  el.value = value;
+}
+
+function readDroppedFile(text) {
+  if (!text) return;
+  fillBlank("ticIncome", moneyIn(text, "annual income") || moneyIn(text, "TIC"));
+  fillBlank("incomeLimit", moneyIn(text, "income limit"));
+  fillBlank("tenantRent", moneyIn(text, "tenant rent") || moneyIn(text, "rent"));
+  fillBlank("maxRent", moneyIn(text, "max rent") || moneyIn(text, "gross rent"));
+  const lease = text.match(/lease[^\d]{0,24}(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})[^\d]{0,16}(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i);
+  if (lease) {
+    fillBlank("leaseStart", isoDate(lease[1]));
+    fillBlank("leaseEnd", isoDate(lease[2]));
+  }
+  const oldVer = text.match(/pay stub[^\d]{0,24}(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i);
+  if (oldVer) fillBlank("oldestVer", isoDate(oldVer[1]));
+  if (/owner signature missing/i.test(text)) {
+    const box = document.getElementById("ownerSigned");
+    if (box) box.checked = false;
+  }
+  if (/full-time student/i.test(text)) fillBlank("ftStudents", "1");
+  const note = document.getElementById("readNote");
+  if (note) note.textContent = "Read the text layer. Blank fields were filled from that text. A scan with no text layer is not read.";
+}
+
+function showLimit() {
+  if (document.getElementById("limitNote")) return;
+  const host = document.querySelector("main");
+  if (!host) return;
+  const note = document.createElement("p");
+  note.id = "limitNote";
+  note.className = "hint";
+  note.textContent = "This pass reads the file text and applies federal Tax Credit, HUD, HOME, RD, and Section 202 checks, plus the Idaho stacking order when Idaho is selected. It does not reason like a model. The other 49 states are named, and the state manual still controls where it is stricter. County limits are not looked up.";
+  host.insertBefore(note, host.firstChild);
+  const setup = document.getElementById("setup");
+  if (setup && !document.getElementById("readNote")) {
+    const line = document.createElement("p");
+    line.id = "readNote";
+    line.className = "hint";
+    setup.appendChild(line);
+  }
+}
+
+document.getElementById("reviewBtn").addEventListener("click", function () { readDroppedFile(extractedText); }, true);
+showLimit();
+
+</script>
+<script>
+/* Specialist review. Federal rules run in every state. The selected agency is named.
+   A model call is optional and uses a key typed on this phone. The key is not stored in git. */
+function specialistPacket(input, result, text) {
+  const agency = typeof agencyName === "function" ? agencyName(input.state) : "the allocating agency";
+  return [
+    "Review this affordable-housing tenant file as a compliance specialist.",
+    "State: " + (input.state || "not selected") + ". Allocating agency: " + agency + ".",
+    "Programs: " + (input.programs || []).join(", ") + ". Certification: " + (input.certType || "move-in") + ".",
+    "Apply IRC 42, the IRS 8823 Guide, HUD Handbook 4350.3, 24 CFR 92, and RD HB-2-3560 where those programs are selected.",
+    "If the state manual is stricter than the federal floor, say so and name the manual. Do not invent a state rule you cannot support.",
+    "Idaho uses the IHFA stacking order revised October 2025. Other states use that agency's current forms.",
+    "Return the corrections a site manager must make, what the file should contain, and what is only a watch item.",
+    "File text:",
+    text || "(no text layer)",
+    "Checklist already found:",
+    (result.findings || []).map((f) => f.severity + ": " + f.title + " — " + f.found).join("\n")
+  ].join("\n");
+}
+
+async function reasonOverFile() {
+  const out = document.getElementById("reasonOut");
+  const key = (document.getElementById("modelKey") || {}).value || "";
+  const input = typeof readInput === "function" ? readInput() : { state: "ID", programs: ["lihtc"] };
+  if (typeof readDroppedFile === "function") readDroppedFile(extractedText);
+  const result = typeof reviewFile === "function" ? reviewFile(input) : { findings: [] };
+  const packet = specialistPacket(input, result, extractedText);
+  if (!key) {
+    out.textContent = "Federal review is above. A model pass needs a key typed here. It is not saved in git. Without a key, this is the checklist plus the file text, not a reasoned review.\n\n" + packet;
+    return;
+  }
+  out.textContent = "Sending the file text and the checklist to the model…";
+  try {
+    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+      body: JSON.stringify({
+        model: "grok-4",
+        messages: [{ role: "user", content: packet }]
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error && data.error.message ? data.error.message : "Model call failed");
+    out.textContent = data.choices[0].message.content;
+  } catch (err) {
+    out.textContent = "The model call did not complete from this page: " + err.message + "\nA public page often cannot call the model directly. The review packet is ready for a private server.\n\n" + packet;
+  }
+}
+
+function mountReason() {
+  if (document.getElementById("reasonBox")) return;
+  const host = document.getElementById("letterPanel") || document.querySelector("main");
+  if (!host) return;
+  const box = document.createElement("section");
+  box.className = "panel";
+  box.id = "reasonBox";
+  box.innerHTML = "<h2>Reason over this file</h2><p class=\"hint\">Runs for the state you selected. Federal rules apply in all 50. The model key stays in this box and is not written to git.</p><input id=\"modelKey\" type=\"password\" placeholder=\"Model key, optional\" autocomplete=\"off\" /><button type=\"button\" class=\"go\" id=\"reasonBtn\">Reason over this file</button><pre id=\"reasonOut\"></pre>";
+  host.parentNode.insertBefore(box, host.nextSibling);
+  document.getElementById("reasonBtn").addEventListener("click", reasonOverFile);
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountReason);
+else mountReason();
+
+</script>
+<script>
+/* Compliance specialist memo. State rules are added only where a source was read. */
+function stateRule(code) {
+  const floor = "Federal floor: Section 42 student rule, student status at move-in and every year, 120-day HUD verification, six-month initial lease. A 100 percent tax credit property is not required to recertify income. Student status is still annual.";
+  if (code === "ID") return floor + " Idaho Housing: student certification is still required every year at a 100 percent property. A verification lasts 120 days from the date the owner receives it. Recertification starts 120 days before the anniversary. Source: IHFA manual, 2020 text; confirm the current manual.";
+  if (code === "ND") return floor + " North Dakota Housing: written verifications last 120 days. A 100 percent property does not verify income and assets annually. Student status is verified in the first 15 years. Source: North Dakota 2025 manual.";
+  if (code === "CA" || code === "MI" || code === "OH" || code === "WA") return floor + " This state publishes a compliance manual. That manual was not copied into the review. Use the current manual on the agency site if it is stricter.";
+  return floor + " No state-specific rule was added. Do not apply the Idaho or North Dakota rule here. The allocating agency manual controls if it is stricter.";
+}
+
+function specialistMemo(input, result, text) {
+  const agency = typeof agencyName === "function" ? agencyName(input.state) : "the allocating agency";
+  const open = result.findings.filter((f) => f.severity !== "pass");
+  const lines = [];
+  lines.push("Compliance specialist review");
+  lines.push((input.property || "Property") + " · unit " + (input.unit || "—") + " · " + (input.head || "household"));
+  lines.push("State: " + (input.state || "—") + " · " + agency);
+  lines.push("Programs: " + (input.programs || []).join(", "));
+  lines.push("");
+  lines.push("State rule applied to this file");
+  lines.push(stateRule(input.state));
+  lines.push("");
+  lines.push("What I read in the file");
+  lines.push(text ? text.slice(0, 1200) : "No text layer. A scan was not read. Tick the documents that are in the paper file.");
+  lines.push("");
+  lines.push(open.length ? "Corrections" : "No correction on the items this pass can see.");
+  open.forEach((f, i) => {
+    lines.push((i + 1) + ". " + f.title);
+    lines.push("In the file: " + f.found);
+    lines.push("Correction: " + f.correction);
+    lines.push("Should look like: " + f.should);
+    lines.push("Authority: " + f.cite);
+    lines.push("");
+  });
+  lines.push("How this file should be stacked");
+  const stack = typeof stackingFor === "function" ? stackingFor(input.state) : null;
+  if (stack) stack.movein.forEach((item, i) => lines.push((i + 1) + ". " + item));
+  lines.push("");
+  lines.push("This review applies the sourced state rule above. It is not an agency determination.");
+  return lines.join("\n");
+}
+
+function writeSpecialist() {
+  if (typeof readDroppedFile === "function") readDroppedFile(typeof extractedText === "string" ? extractedText : "");
+  if (typeof readInput !== "function" || typeof reviewFile !== "function") return;
+  const input = readInput();
+  const result = reviewFile(input);
+  const memo = specialistMemo(input, result, typeof extractedText === "string" ? extractedText : "");
+  const letter = document.getElementById("letter");
+  if (letter) letter.innerText = memo;
+  const out = document.getElementById("reasonOut");
+  if (out) out.textContent = memo;
+}
+
+function mountSpecialist() {
+  const btn = document.getElementById("reviewBtn");
+  if (btn) btn.addEventListener("click", function () { setTimeout(writeSpecialist, 0); });
+  const sample = document.getElementById("loadSample");
+  if (sample) sample.addEventListener("click", function () { setTimeout(writeSpecialist, 0); });
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountSpecialist);
+else mountSpecialist();
+
+</script>
+<script>
+const $ = (id) => document.getElementById(id);
+let extractedText = "";
+let fileNames = [];
+
+function selectedPrograms() {
+  return [...document.querySelectorAll("input[name=program]:checked")].map((el) => el.value);
+}
+
+function readInput() {
+  return {
+    property: $("property").value.trim(),
+    unit: $("unit").value.trim(),
+    head: $("head").value.trim(),
+    manager: $("manager").value.trim(),
+    state: $("state").value,
+    certType: $("certType").value,
+    effective: $("effective").value,
+    priorCert: $("priorCert").value,
+    programs: selectedPrograms(),
+    incomeLimit: $("incomeLimit").value,
+    ticIncome: $("ticIncome").value,
+    wageIncome: $("wageIncome").value,
+    otherIncome: $("otherIncome").value,
+    assets: $("assets").value,
+    assetIncome: $("assetIncome").value,
+    tenantRent: $("tenantRent").value,
+    ua: $("ua").value,
+    maxRent: $("maxRent").value,
+    stubCount: $("stubCount").value,
+    oldestVer: $("oldestVer").value,
+    leaseStart: $("leaseStart").value,
+    leaseEnd: $("leaseEnd").value,
+    headAge: Number($("headAge").value || 0),
+    ftStudents: $("ftStudents").value,
+    members: $("members").value,
+    allFt: $("allFt").checked,
+    studentException: $("studentException").checked,
+    ownerSigned: $("ownerSigned").checked,
+    adultsSigned: $("adultsSigned").checked,
+    docs: docState()
+  };
+}
+
+function docState() {
+  const state = {};
+  document.querySelectorAll("#docList input").forEach((el) => { state[el.value] = el.checked; });
+  return state;
+}
+
+function textHas(re, text) {
+  if (!text) return false;
+  const flags = re.flags.includes("g") ? re.flags : re.flags + "g";
+  const global = new RegExp(re.source, flags);
+  let match;
+  while ((match = global.exec(text))) {
+    const before = text.slice(Math.max(0, match.index - 32), match.index);
+    if (!/\b(no|not|missing|without|absent|lacks|is not|isn't)\b[^.]{0,24}$/i.test(before)) return true;
+    if (match.index === global.lastIndex) global.lastIndex += 1;
+  }
+  return false;
+}
+
+function renderDocs() {
+  const programs = selectedPrograms();
+  const previous = docState();
+  const docs = RULES.documents.filter((d) => d.programs.some((p) => programs.includes(p)));
+  $("docList").innerHTML = docs.map((d) => {
+    const detected = d.detect.some((re) => textHas(re, extractedText) || textHas(re, fileNames.join(" ")));
+    const denied = d.detect.some((re) => {
+      const flags = re.flags.includes("g") ? re.flags : re.flags + "g";
+      const global = new RegExp(re.source, flags);
+      let match;
+      while ((match = global.exec(extractedText))) {
+        const before = extractedText.slice(Math.max(0, match.index - 32), match.index);
+        if (/\b(no|not|missing|without|absent|lacks)\b[^.]{0,24}$/i.test(before)) return true;
+        if (match.index === global.lastIndex) global.lastIndex += 1;
+      }
+      return false;
+    });
+    const checked = denied ? false : (previous[d.id] || detected);
+    return '<label class="doc"><input type="checkbox" value="' + d.id + '" ' + (checked ? "checked" : "") + ' /><span>' + d.label + (detected ? '<small class="badge">Seen in the upload</small>' : '<small>Confirm if it is in the paper file</small>') + '</span></label>';
+  }).join("");
+  const names = programs.map((id) => PROGRAM_LABEL[id]).join(" + ");
+  $("layerNote").textContent = programs.length > 1
+    ? names + ": the stricter rule is applied. A missing document under any selected program is a correction."
+    : (names || "Select a program") + " file standard.";
+}
+
+function setFiles(files) {
+  fileNames = [...files].map((f) => f.name);
+  $("fileList").innerHTML = fileNames.map((name) => "<li>" + name + "</li>").join("") || "";
+  extractAll(files);
+}
+
+async function extractAll(files) {
+  const parts = [];
+  for (const file of files) {
+    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) parts.push(await pdfText(file));
+    else if (/^text|json|csv/.test(file.type) || /\.(txt|md|csv)$/i.test(file.name)) parts.push(await file.text());
+    else parts.push("[Image filed: " + file.name + ". Text was not read from this image. Confirm the documents below.]");
+  }
+  extractedText = parts.filter(Boolean).join("\n\n");
+  $("extracted").textContent = extractedText || "No text layer found. A photo or scan with no text was not read. Tick the documents that are actually in the paper file, then review.";
+  renderDocs();
+  if (extractedText && typeof review === "function") review();
+}
+
+async function pdfText(file) {
+  if (!window.pdfjsLib) return "";
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i += 1) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item) => item.str).join(" ") + "\n";
+  }
+  return text;
+}
+
+function loadSample() {
+  $("property").value = "Clearwater Court Apartments";
+  $("unit").value = "204";
+  $("head").value = "Maria Santos";
+  $("manager").value = "Site manager";
+  $("state").value = "ID";
+  $("certType").value = "movein";
+  $("effective").value = "2026-03-01";
+  $("incomeLimit").value = "32400";
+  $("ticIncome").value = "10110";
+  $("wageIncome").value = "22132.50";
+  $("otherIncome").value = "0";
+  $("assets").value = "3200";
+  $("assetIncome").value = "0";
+  $("tenantRent").value = "780";
+  $("ua").value = "95";
+  $("maxRent").value = "850";
+  $("stubCount").value = "2";
+  $("oldestVer").value = "2025-08-15";
+  $("leaseStart").value = "2026-03-01";
+  $("leaseEnd").value = "2026-05-31";
+  $("headAge").value = "41";
+  $("ftStudents").value = "1";
+  $("members").value = "3";
+  $("allFt").checked = false;
+  $("studentException").checked = false;
+  $("ownerSigned").checked = false;
+  $("adultsSigned").checked = true;
+  document.querySelectorAll("input[name=program]").forEach((el) => {
+    el.checked = el.value === "lihtc" || el.value === "home";
+  });
+  extractedText = "Clearwater Court Apartments Unit 204\nHead of household Maria Santos. Household member Luis Santos, age 19, full-time student.\nRental application date 02/01/2026.\nIHFA TIC Tenant Income Certification annual income $10,110. Adult signatures present. Owner signature missing.\nPay stub earnings statement 08/15/2025 $842.50. Pay stub 08/29/2025 $860.00.\nLease 03/01/2026 through 05/31/2026.\nNo student status form. No HOME certification. No asset self-certification. No bank statement. No calculation worksheet. No VAWA addendum. No move-in inspection.";
+  fileNames = ["Clearwater-204-move-in.txt"];
+  $("fileList").innerHTML = "<li>Sample file: Clearwater Court 204 move-in (deficient)</li>";
+  $("extracted").textContent = extractedText;
+  renderDocs();
+  review();
+}
+
+function review() {
+  if (typeof reviewFile !== "function" || typeof RULES === "undefined") {
+    $("score").textContent = "Review engine did not load. Reload the page.";
+    return;
+  }
+  if (typeof readDroppedFile === "function") readDroppedFile(extractedText);
+  const input = readInput();
+  const result = reviewFile(input);
+  const c = result.counts;
+  $("score").textContent = (c.critical || 0) + " must fix \u00b7 " + (c.needed || 0) + " corrections \u00b7 " + (c.watch || 0) + " watch \u00b7 " + (c.pass || 0) + " present";
+  $("findings").innerHTML = result.findings.map((f) => '<article class="finding ' + f.severity + '"><div class="meta">' + f.severity + " \u00b7 " + f.program + '</div><h3>' + f.title + '</h3><p><strong>In the file.</strong> ' + f.found + '</p><p><strong>Should look like.</strong> ' + f.should + '</p><p><strong>Manager correction.</strong> ' + f.correction + '</p><p class="hint">' + f.cite + '</p></article>').join("");
+  const pack = RULES.stacking[input.state] || RULES.stacking.OTHER;
+  $("modelPanel").innerHTML = "<h2>" + pack.name + "</h2><p class=\"hint\">" + pack.revised + ". " + pack.note + "</p><ol class=\"stack\">" + pack.movein.map((item) => "<li>" + item + "</li>").join("") + "</ol><h3>Program pieces that sit in that order</h3><ul class=\"stack\"><li>Tax Credit: TIC, student certification at move-in and every year, six-month initial lease, 140% Available Unit Rule at recertification.</li><li>HUD: 50059, HUD-9887, EIV at recertification, citizenship declaration. 2026 passbook rate 0.40%. Asset self-certification through $52,787. Dependent deduction $500. Elderly or disabled deduction $550, which is not a Tax Credit deduction.</li><li>HOME: income at occupancy under 24 CFR 5.609, HOME rent cap, one-year lease unless both parties agree shorter, no prohibited lease terms. Layered Idaho units need a HOME certification and a TIC.</li><li>RD: Form RD 3560-8, annual certification, verifications behind the form.</li><li>Section 202: age 62 proof for the qualifying member, then the HUD certification packet.</li></ul>";
+  const memo = typeof specialistMemo === "function" ? "\n\n" + specialistMemo(input, result, extractedText) : "";
+  $("letter").innerText = buildLetter(input, result) + memo;
+}
+
+function showTab(name) {
+  document.querySelectorAll(".tabs button").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === name));
+  $("findingsPanel").classList.toggle("hidden", name !== "findings");
+  $("modelPanel").classList.toggle("hidden", name !== "model");
+  $("letterPanel").classList.toggle("hidden", name !== "letter");
+}
+
+$("drop").addEventListener("dragover", (e) => { e.preventDefault(); $("drop").classList.add("over"); });
+$("drop").addEventListener("dragleave", () => $("drop").classList.remove("over"));
+$("drop").addEventListener("drop", (e) => {
+  e.preventDefault();
+  $("drop").classList.remove("over");
+  setFiles(e.dataTransfer.files);
+});
+$("fileInput").addEventListener("change", (e) => setFiles(e.target.files));
+$("loadSample").addEventListener("click", loadSample);
+$("reviewBtn").addEventListener("click", review);
+$("printLetter").addEventListener("click", () => window.print());
+document.querySelectorAll("input[name=program]").forEach((el) => el.addEventListener("change", renderDocs));
+document.querySelectorAll(".tabs button").forEach((btn) => btn.addEventListener("click", () => showTab(btn.dataset.tab)));
+renderDocs();
+
+</script>
 </body>
 </html>
