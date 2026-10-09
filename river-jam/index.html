@@ -64,6 +64,7 @@
   <div class="tray" id="tray"></div>
   <div class="row">
     <button type="button" id="flip">Flip</button>
+    <button type="button" class="ghost" id="again">New river</button>
     <button type="button" class="ghost" id="soundBtn">Sound on</button>
   </div>
 </main>
@@ -427,12 +428,18 @@ function start(keepScore) {
   document.getElementById("over").classList.remove("show");
   draw();
 }
-document.getElementById("flip").onclick = () => { if (tray[selected]) { tray[selected].cells = flip(tray[selected].cells); draw(); } };
-document.getElementById("soundBtn").onclick = () => { musicOn = !musicOn; document.getElementById("soundBtn").textContent = musicOn ? "Sound on" : "Sound off"; if (musicOn) armMusic(); else if (musicTimer) clearInterval(musicTimer); };
+function boot() {
+  try { start(false); tick(); }
+  catch (err) { const yell = document.getElementById("yell"); if (yell) yell.textContent = "Board failed: " + err.message; }
+}
+boot();
+function bind(id, fn) { const el = document.getElementById(id); if (el) el.onclick = fn; }
+bind("flip", () => { if (tray[selected]) { tray[selected].cells = flip(tray[selected].cells); draw(); } });
+bind("soundBtn", () => { musicOn = !musicOn; document.getElementById("soundBtn").textContent = musicOn ? "Sound on" : "Sound off"; if (musicOn) armMusic(); else if (musicTimer) clearInterval(musicTimer); });
 document.body.addEventListener("pointerdown", () => { if (musicOn && !musicTimer) armMusic(); }, { once: true });
-document.getElementById("again").onclick = () => start(false);
-document.getElementById("closeOver").onclick = () => document.getElementById("over").classList.remove("show");
-document.getElementById("cont").onclick = () => {
+bind("again", () => start(false));
+bind("closeOver", () => document.getElementById("over").classList.remove("show"));
+bind("cont", () => {
   continued = true;
   for (let y = 2; y <= 5; y++) for (let x = 2; x <= 5; x++) board[y][x] = 0;
   tray = [makePiece(), makePiece(), { cells:[[1]], color:"#f2c14e", power:"bolt" }];
@@ -441,11 +448,6 @@ document.getElementById("cont").onclick = () => {
   popText("MIDDLE CLEARED");
   draw();
 };
-function boot() {
-  try { start(false); tick(); }
-  catch (err) { document.getElementById("yell").textContent = "Board failed: " + err.message; }
-}
-boot();
 window.riverFx = skyShow;
 </script>
 </body>
