@@ -3,142 +3,237 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <title>River Jam</title>
 <style>
-  :root { --ink:#123; --water:#1b6b78; --deep:#0e3d46; --foam:#f4efe4; --salmon:#e36b4a; --otter:#c9844a; }
+  :root { --foam:#f7f1e4; --deep:#07262c; }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: Georgia, "Iowan Old Style", serif; background: radial-gradient(circle at 50% 0, #2a8d96, var(--deep) 70%); color: var(--foam); min-height:100dvh; }
-  main { max-width: 420px; margin: 0 auto; padding: 14px 14px 28px; }
-  h1 { font-size: 28px; margin: 8px 0 0; letter-spacing: .02em; }
-  .sub { margin: 4px 0 12px; opacity:.85; font-size: 14px; }
-  .bar { display:flex; justify-content:space-between; gap:8px; margin-bottom:10px; }
-  .stat { background: rgba(0,0,0,.22); border-radius: 12px; padding: 8px 10px; min-width: 92px; }
-  .stat b { display:block; font-size: 20px; }
-  .stat span { font-size: 12px; opacity:.75; }
-  .board { display:grid; grid-template-columns: repeat(8, 1fr); gap: 4px; background: rgba(8,30,34,.55); padding: 8px; border-radius: 16px; touch-action: manipulation; }
-  .cell { aspect-ratio:1; border-radius: 6px; background: rgba(255,255,255,.08); }
-  .cell.on { background: var(--otter); box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); }
-  .cell.salmon { background: var(--salmon); }
-  .cell.preview { outline: 2px solid #fff; }
-  .tray { display:flex; justify-content:space-between; gap:8px; margin-top:12px; min-height: 92px; }
-  .piece { flex:1; background: rgba(0,0,0,.22); border-radius: 14px; min-height: 88px; display:flex; align-items:center; justify-content:center; border: 2px solid transparent; }
-  .piece.sel { border-color: #fff; }
-  .mini { display:grid; gap:3px; }
-  .dot { width: 16px; height: 16px; border-radius: 4px; background: var(--otter); }
-  .dot.s { background: var(--salmon); }
-  button { font: inherit; border:0; border-radius: 999px; padding: 12px 16px; background: var(--salmon); color: white; }
-  .row { display:flex; gap:8px; margin-top:12px; }
-  .ghost { background: transparent; color: var(--foam); border: 1px solid rgba(255,255,255,.35); }
-  #over { position:fixed; inset:0; background: rgba(8,24,28,.82); display:none; align-items:center; justify-content:center; padding:20px; }
+  body { margin:0; min-height:100dvh; font-family: Georgia, serif; color: var(--foam); background:#07262c; overflow:hidden; }
+  body.shake { animation: shake .28s linear; }
+  @keyframes shake { 25% { transform: translate(4px,-2px) } 50% { transform: translate(-5px,3px) } 75% { transform: translate(3px,1px) } }
+  main { max-width:420px; margin:0 auto; padding:10px 12px 20px; position:relative; }
+  h1 { margin:4px 0 0; font-size:26px; }
+  .sub { margin:2px 0 8px; font-size:13px; opacity:.8; }
+  .bar { display:flex; gap:6px; }
+  .stat { flex:1; background:rgba(255,255,255,.08); border-radius:12px; padding:6px 8px; }
+  .stat b { display:block; font-size:18px; }
+  .stat span { font-size:11px; opacity:.7; }
+  .stage { position:relative; margin-top:10px; }
+  canvas#fx { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .board { display:grid; grid-template-columns:repeat(8,1fr); gap:3px; background:rgba(0,0,0,.28); padding:7px; border-radius:16px; }
+  .cell { aspect-ratio:1; border-radius:7px; background:rgba(255,255,255,.07); position:relative; transition:transform .12s; }
+  .cell.hot { transform: scale(.86); }
+  .stone { position:absolute; inset:2px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:13px; box-shadow: inset 0 -3px rgba(0,0,0,.25); }
+  .pop { position:absolute; font-weight:700; color:#fff; text-shadow:0 2px 0 #000; animation: float .7s ease-out forwards; pointer-events:none; }
+  @keyframes float { to { transform: translateY(-36px); opacity:0; } }
+  .tray { display:flex; gap:8px; margin-top:10px; min-height:86px; }
+  .piece { flex:1; border:2px solid transparent; background:rgba(255,255,255,.08); border-radius:14px; display:flex; align-items:center; justify-content:center; color:inherit; }
+  .piece.sel { border-color:#fff; }
+  .mini { display:grid; gap:2px; }
+  .dot { width:14px; height:14px; border-radius:4px; }
+  .row { display:flex; gap:8px; margin-top:10px; }
+  button { font:inherit; border:0; border-radius:999px; padding:11px 14px; background:#e36b4a; color:white; }
+  .ghost { background:transparent; border:1px solid rgba(255,255,255,.35); }
+  #yell { min-height:22px; font-size:18px; color:#ffe08a; }
+  #over { position:fixed; inset:0; background:rgba(4,16,18,.84); display:none; align-items:center; justify-content:center; padding:18px; }
   #over.show { display:flex; }
-  .card { background: var(--foam); color: var(--ink); border-radius: 18px; padding: 18px; max-width: 340px; }
-  .card p { margin: 8px 0 14px; }
+  .card { background:var(--foam); color:#123; border-radius:18px; padding:18px; max-width:340px; }
 </style>
 </head>
 <body>
 <main>
   <h1>River Jam</h1>
-  <p class="sub">Pip the otter stacks river stones. Clear a line. A row and a column together makes a splash.</p>
+  <p class="sub">Bombs, lightning, and a color burst. Three clears in a row starts fever.</p>
   <div class="bar">
     <div class="stat"><b id="score">0</b><span>score</span></div>
     <div class="stat"><b id="best">0</b><span>best</span></div>
-    <div class="stat"><b id="splash">0</b><span>splashes</span></div>
+    <div class="stat"><b id="combo">0</b><span>combo</span></div>
   </div>
-  <div class="board" id="board"></div>
+  <div id="yell"></div>
+  <div class="stage">
+    <div class="board" id="board"></div>
+    <canvas id="fx"></canvas>
+  </div>
   <div class="tray" id="tray"></div>
   <div class="row">
-    <button type="button" id="flip">Flip piece</button>
+    <button type="button" id="flip">Flip</button>
     <button type="button" class="ghost" id="again">New river</button>
   </div>
 </main>
-<div id="over"><div class="card"><h2>River jammed</h2><p id="overText"></p><button type="button" id="cont">One more drop</button> <button type="button" class="ghost" id="closeOver">Done</button></div></div>
+<div id="over"><div class="card"><h2 id="overTitle">River jammed</h2><p id="overText"></p><button type="button" id="cont">Bomb the middle</button> <button type="button" class="ghost" id="closeOver">Done</button></div></div>
 <script>
 const N = 8;
-const shapes = [[[1,1,1]],[[1],[1],[1]],[[1,1],[1,1]],[[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],[[1,1,0],[0,1,1]],[[1,0],[1,0],[1,1]],[[1]],[[1,1,1,1]],[[1,1],[1,0]]];
-let board, tray, score, best, splashes, selected, continued, salmonDue;
+const colors = ["#e36b4a", "#f2c14e", "#3cb8a9", "#7c6cf0", "#f08ab0"];
+const shapes = [[[1,1,1]],[[1],[1],[1]],[[1,1],[1,1]],[[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],[[1,1,0],[0,1,1]],[[1,0],[1,0],[1,1]],[[1]],[[1,1,1,1]],[[1,1],[1,0]],[[1,1,1],[0,1,0]]];
 const boardEl = document.getElementById("board");
-const trayEl = document.getElementById("tray");
+const fx = document.getElementById("fx");
+const ctx = fx.getContext("2d");
+let board, tray, score, best, combo, fever, selected, continued, parts;
 best = Number(localStorage.getItem("riverjam-best") || 0);
 document.getElementById("best").textContent = best;
+const audio = new (window.AudioContext || window.webkitAudioContext)();
+function beep(freq, dur, type) {
+  if (audio.state === "suspended") audio.resume();
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = type || "square";
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.05, audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
+  o.connect(g); g.connect(audio.destination);
+  o.start(); o.stop(audio.currentTime + dur);
+}
 function empty() { return Array.from({length:N}, () => Array(N).fill(0)); }
 function clone(s) { return s.map(r => r.slice()); }
 function flip(s) { return s[0].map((_, c) => s.map(r => r[c]).reverse()); }
-function randShape(forceSalmon) {
-  if (forceSalmon) return { cells:[[1]], salmon:true };
-  const cells = clone(shapes[Math.floor(Math.random()*shapes.length)]);
-  return { cells, salmon:false };
+function makePiece() {
+  const roll = Math.random();
+  const power = roll < 0.16 ? "bomb" : roll < 0.28 ? "bolt" : roll < 0.38 ? "burst" : "";
+  const cells = power === "bomb" ? [[1]] : clone(shapes[Math.floor(Math.random() * shapes.length)]);
+  return { cells, color: colors[Math.floor(Math.random() * colors.length)], power };
 }
 function fits(piece, r, c) {
-  const s = piece.cells;
-  for (let y=0;y<s.length;y++) for (let x=0;x<s[y].length;x++) if (s[y][x] && (r+y>=N || c+x>=N || board[r+y][c+x])) return false;
+  for (let y = 0; y < piece.cells.length; y++) for (let x = 0; x < piece.cells[y].length; x++) {
+    if (piece.cells[y][x] && (r + y >= N || c + x >= N || board[r + y][c + x])) return false;
+  }
   return true;
 }
 function anyFit(piece) {
-  for (let r=0;r<N;r++) for (let c=0;c<N;c++) if (fits(piece,r,c)) return true;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(piece, r, c)) return true;
   return false;
 }
+function boom(r, c, color) {
+  const cell = boardEl.children[r * N + c];
+  if (!cell) return;
+  const rect = cell.getBoundingClientRect();
+  const stage = document.querySelector(".stage").getBoundingClientRect();
+  parts.push({ x: rect.left - stage.left + rect.width / 2, y: rect.top - stage.top + rect.height / 2, color, life: 18, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 4 - 1 });
+}
+function popText(text) {
+  const el = document.createElement("div");
+  el.className = "pop";
+  el.textContent = text;
+  el.style.left = "40%";
+  el.style.top = "30%";
+  document.querySelector(".stage").appendChild(el);
+  setTimeout(() => el.remove(), 700);
+  document.getElementById("yell").textContent = text;
+}
+function clearAt(r, c, bag) {
+  if (r < 0 || c < 0 || r >= N || c >= N || !board[r][c] || bag.has(r + "," + c)) return;
+  bag.add(r + "," + c);
+  boom(r, c, board[r][c].color);
+  board[r][c] = 0;
+}
 function place(piece, r, c) {
-  const s = piece.cells;
-  for (let y=0;y<s.length;y++) for (let x=0;x<s[y].length;x++) if (s[y][x]) board[r+y][c+x] = piece.salmon ? 2 : 1;
-  const rows = [], cols = [];
-  for (let i=0;i<N;i++) if (board[i].every(v => v)) rows.push(i);
-  for (let i=0;i<N;i++) if (board.every(row => row[i])) cols.push(i);
-  let cleared = 0;
-  rows.forEach(i => { board[i] = Array(N).fill(0); cleared += N; });
-  cols.forEach(i => { for (let y=0;y<N;y++) if (board[y][i]) { board[y][i]=0; cleared++; } });
-  if (rows.length && cols.length) {
-    splashes++;
-    rows.forEach(rr => cols.forEach(cc => [[rr-1,cc],[rr+1,cc],[rr,cc-1],[rr,cc+1]].forEach(([y,x]) => { if (y>=0&&x>=0&&y<N&&x<N&&board[y][x]) { board[y][x]=0; cleared++; } })));
+  const dropped = [];
+  for (let y = 0; y < piece.cells.length; y++) for (let x = 0; x < piece.cells[y].length; x++) if (piece.cells[y][x]) {
+    board[r + y][c + x] = { color: piece.color, power: piece.power };
+    dropped.push([r + y, c + x]);
   }
-  score += cleared * 10 * Math.max(1, rows.length + cols.length);
-  if (score >= salmonDue) { tray.push(randShape(true)); salmonDue += 400; }
+  const bag = new Set();
+  dropped.forEach(([rr, cc]) => {
+    const stone = { power: piece.power, color: piece.color };
+    if (stone.power === "bomb") for (let y = rr - 1; y <= rr + 1; y++) for (let x = cc - 1; x <= cc + 1; x++) clearAt(y, x, bag);
+    if (stone.power === "bolt") { for (let i = 0; i < N; i++) { clearAt(rr, i, bag); clearAt(i, cc, bag); } }
+    if (stone.power === "burst") for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (board[y][x] && board[y][x].color === stone.color) clearAt(y, x, bag);
+  });
+  const rows = [], cols = [];
+  for (let i = 0; i < N; i++) if (board[i].every(v => v)) rows.push(i);
+  for (let i = 0; i < N; i++) if (board.every(row => row[i])) cols.push(i);
+  rows.forEach(i => { for (let x = 0; x < N; x++) clearAt(i, x, bag); });
+  cols.forEach(i => { for (let y = 0; y < N; y++) clearAt(y, i, bag); });
+  if (rows.length && cols.length) for (let y = r - 1; y <= r + piece.cells.length; y++) for (let x = c - 1; x <= c + piece.cells[0].length; x++) clearAt(y, x, bag);
+  const cleared = bag.size;
+  if (cleared) {
+    combo++;
+    if (combo >= 3) fever = 5;
+    const mult = (fever ? 2 : 1) * Math.max(1, rows.length + cols.length);
+    const gain = cleared * 10 * mult;
+    score += gain;
+    const label = piece.power === "bomb" ? "BOOM" : piece.power === "bolt" ? "LIGHTNING" : piece.power === "burst" ? "BURST" : rows.length && cols.length ? "SPLASH" : fever ? "FEVER" : "+" + gain;
+    popText(label);
+    document.body.classList.add("shake");
+    setTimeout(() => document.body.classList.remove("shake"), 280);
+    beep(piece.power ? 180 : 420, 0.12, piece.power ? "sawtooth" : "square");
+    if (fever) fever--;
+  } else combo = 0;
   document.getElementById("score").textContent = score;
-  document.getElementById("splash").textContent = splashes;
+  document.getElementById("combo").textContent = combo;
   if (score > best) { best = score; localStorage.setItem("riverjam-best", best); document.getElementById("best").textContent = best; }
 }
 function draw() {
   boardEl.innerHTML = "";
-  for (let r=0;r<N;r++) for (let c=0;c<N;c++) {
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
     const d = document.createElement("div");
-    d.className = "cell" + (board[r][c]===1 ? " on" : board[r][c]===2 ? " salmon" : "");
-    d.onclick = () => drop(r,c);
+    d.className = "cell";
+    if (board[r][c]) {
+      const s = document.createElement("div");
+      s.className = "stone";
+      s.style.background = board[r][c].color;
+      s.textContent = board[r][c].power === "bomb" ? "💣" : board[r][c].power === "bolt" ? "⚡" : board[r][c].power === "burst" ? "✦" : "";
+      d.appendChild(s);
+    }
+    d.onclick = () => drop(r, c);
     boardEl.appendChild(d);
   }
-  trayEl.innerHTML = "";
+  document.getElementById("tray").innerHTML = "";
   tray.forEach((p, i) => {
     const box = document.createElement("button");
     box.type = "button";
-    box.className = "piece" + (i===selected ? " sel" : "");
+    box.className = "piece" + (i === selected ? " sel" : "");
     const mini = document.createElement("div");
     mini.className = "mini";
-    mini.style.gridTemplateColumns = "repeat(" + p.cells[0].length + ", 16px)";
-    p.cells.forEach(row => row.forEach(v => { const dot = document.createElement("div"); dot.className = "dot" + (p.salmon ? " s" : ""); dot.style.visibility = v ? "visible" : "hidden"; mini.appendChild(dot); }));
+    mini.style.gridTemplateColumns = "repeat(" + p.cells[0].length + ", 14px)";
+    p.cells.forEach(row => row.forEach(v => {
+      const dot = document.createElement("div");
+      dot.className = "dot";
+      dot.style.background = v ? p.color : "transparent";
+      dot.textContent = v && p.power === "bomb" ? "💣" : v && p.power === "bolt" ? "⚡" : v && p.power === "burst" ? "✦" : "";
+      dot.style.fontSize = "9px";
+      mini.appendChild(dot);
+    }));
     box.appendChild(mini);
     box.onclick = () => { selected = i; draw(); };
-    trayEl.appendChild(box);
+    document.getElementById("tray").appendChild(box);
   });
+  const stage = document.querySelector(".stage");
+  fx.width = stage.clientWidth;
+  fx.height = stage.clientHeight;
 }
-function drop(r,c) {
+function drop(r, c) {
   const p = tray[selected];
-  if (!p || !fits(p,r,c)) return;
-  place(p,r,c);
-  tray.splice(selected,1);
-  if (!tray.length) tray = [randShape(), randShape(), randShape()];
-  selected = tray.findIndex(anyFit);
-  if (selected < 0) end();
+  if (!p || !fits(p, r, c)) { beep(90, 0.08, "triangle"); return; }
+  place(p, r, c);
+  tray.splice(selected, 1);
+  if (!tray.length) tray = [makePiece(), makePiece(), makePiece()];
+  selected = Math.max(0, tray.findIndex(anyFit));
+  if (tray.every(piece => !anyFit(piece))) end();
   else draw();
 }
 function end() {
-  document.getElementById("overText").textContent = "Score " + score + ". Pip cleared " + splashes + " splashes. A splash is a row and a column in one drop.";
+  document.getElementById("overText").textContent = "Score " + score + ". Combo peaked at " + combo + ". Bomb the middle for one more drop.";
   document.getElementById("cont").style.display = continued ? "none" : "inline-block";
   document.getElementById("over").classList.add("show");
 }
+function tick() {
+  ctx.clearRect(0, 0, fx.width, fx.height);
+  parts = parts.filter(p => p.life > 0);
+  parts.forEach(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
+    ctx.globalAlpha = p.life / 18;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, 7);
+    ctx.fill();
+  });
+  requestAnimationFrame(tick);
+}
 function start() {
-  board = empty(); score = 0; splashes = 0; continued = false; salmonDue = 400; selected = 0;
-  tray = [randShape(), randShape(), randShape()];
+  board = empty(); score = 0; combo = 0; fever = 0; continued = false; selected = 0; parts = [];
+  tray = [makePiece(), makePiece(), { cells:[[1]], color:"#e36b4a", power:"bomb" }];
   document.getElementById("score").textContent = 0;
-  document.getElementById("splash").textContent = 0;
+  document.getElementById("combo").textContent = 0;
+  document.getElementById("yell").textContent = "A bomb is in the tray.";
   document.getElementById("over").classList.remove("show");
   draw();
 }
@@ -147,13 +242,15 @@ document.getElementById("again").onclick = start;
 document.getElementById("closeOver").onclick = () => document.getElementById("over").classList.remove("show");
 document.getElementById("cont").onclick = () => {
   continued = true;
-  for (let i=0;i<N;i++) { board[3][i]=0; board[i][3]=0; }
-  tray = [randShape(), randShape(), randShape()];
-  selected = 0;
+  for (let y = 2; y <= 5; y++) for (let x = 2; x <= 5; x++) board[y][x] = 0;
+  tray = [makePiece(), makePiece(), { cells:[[1]], color:"#f2c14e", power:"bolt" }];
+  selected = 2;
   document.getElementById("over").classList.remove("show");
+  popText("MIDDLE CLEARED");
   draw();
 };
 start();
+tick();
 </script>
 </body>
 </html>
