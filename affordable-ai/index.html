@@ -995,7 +995,7 @@ function renderPacket(result) {
   showTab("findings");
 }
 function review() {
-  const text = extractedText || "";
+  const text = (typeof extractedText === "string" && extractedText) || (($("extracted") && $("extracted").textContent) || "");
   if (!text.trim()) {
     $("score").textContent = "No file text to review.";
     $("findings").innerHTML = "";
