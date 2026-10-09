@@ -905,79 +905,87 @@ function moneyAll(text, label) {
 function usd(n) {
   return Number(n).toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
+function usd(n) {
+  return Number(n).toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+function num(s) {
+  return s ? Number(String(s).replace(/,/g, "")) : null;
+}
 function reviewPacket(text) {
   const findings = [];
-  const facts = { employers: [], members: [] };
+  const facts = { employers: [], verified: [] };
   const add = (severity, title, quote, correction) => findings.push({ severity, title, quote, correction });
-  const property = (text.match(/Property Name:\s*([A-Za-z0-9 .'’-]+?)(?:\s+County:|\s+Tenant Code:|\n)/) || [])[1];
-  const unit = (text.match(/Unit Number:\s*_*\s*([A-Za-z]?\d+)/i) || [])[1];
-  facts.property = property ? property.trim() : "";
-  facts.unit = unit || "";
-  const head = (text.match(/Household Name:\s*([A-Za-z .'’-]+)/) || text.match(/Member Name:\s*_?\s*([A-Za-z .'’-]+)/) || [])[1];
-  facts.head = head ? head.trim() : "";
-  const worksheet = (text.match(/Total Annual Income\s*=\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1];
-  facts.worksheetAnnual = worksheet ? Number(worksheet.replace(/,/g, "")) : null;
-  const ticWage = (text.match(/Employment or Wages[\s\S]{0,80}?([\d,]+\.\d{2})/i) || [])[1];
-  facts.ticWages = ticWage ? Number(ticWage.replace(/,/g, "")) : null;
-  const cash = (text.match(/Cash on Hand\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1];
-  facts.cashDeclared = cash ? Number(cash.replace(/,/g, "")) : null;
-  const weekly = (text.match(/weekly wage of\s*\$?\s*([\d,]+\.\d{2})/i) || text.match(/Weekly Regular\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1];
-  facts.weeklyRate = weekly ? Number(weekly.replace(/,/g, "")) : null;
+  facts.property = ((text.match(/Property Name:\s*([A-Za-z0-9 .'’-]+?)(?:\s+County:|\s+Tenant Code:|\n)/) || [])[1] || "").trim();
+  facts.unit = ((text.match(/Unit Number:\s*_*\s*([A-Za-z]?\d+)/i) || [])[1] || "");
+  facts.head = ((text.match(/Household Name:\s*([A-Za-z .'’-]+)/) || text.match(/Employee:\s*([A-Za-z .'’-]+)/) || [])[1] || "").trim();
+  facts.worksheetAnnual = num((text.match(/Total Annual Income\s*=\s*\$?\s*([\d,]+\.\d{2})/i) || text.match(/Total Reported Income\s*=\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
+  facts.ticWages = num((text.match(/Employment or Wages[\s\S]{0,80}?([\d,]+\.\d{2})/i) || [])[1]);
+  facts.cashDeclared = num((text.match(/Cash on Hand\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
+  facts.includedCash = num((text.match(/Included asset cash value\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
   facts.recert = /annual recer/i.test(text);
   facts.effective = ((text.match(/Effective Date:\s*(\d{2}-\d{2}-\d{4})/i) || [])[1]) || "";
+  const lines = [...text.matchAll(/\$?\s*([\d,]+\.\d{2})\s+1\.00\s+1\.00\s+\$?\s*[\d,]+\.\d{2}/g)].map((m) => num(m[1]));
+  facts.worksheetLines = lines;
   const blocks = text.split(/Self-Certification of Seasonal Employment/i).slice(1);
-  const byName = new Map();
   for (const block of blocks) {
     const name = ((block.match(/\bat\s+([A-Za-z0-9 .]+?)\s*(?:\(|\.|\n)/i) || [])[1] || "").replace(/\s+/g, " ").trim();
     const weeks = (block.match(/(\d+)\s*weeks/gi) || []).map((s) => Number(s.match(/\d+/)[0])).find((n) => n < 52);
-    if (name && weeks) byName.set(name.toLowerCase(), { name, weeks });
+    if (name && weeks) facts.employers.push({ name, weeks });
   }
-  facts.employers = [...byName.values()];
-  const namedEmployer = (text.match(/Name of Employer:\s*1\.\s*([A-Za-z0-9 .]+)/i) || [])[1];
-  if (namedEmployer) facts.employers.push({ name: namedEmployer.trim(), weeks: null });
-  const component = (text.match(/Non-Federal Wage Annual Regular\s*\$?\s*(213\.56)/i) || [])[1];
-  facts.unattributed = component ? Number(component) : null;
-  const hasTic = /tenant income certification/i.test(text);
-  const hasWorksheet = /income calculation worksheet|Total Annual Income/i.test(text);
-  const hasSeasonal = /Self-Certification of Seasonal Employment/i.test(text);
-  const hasAssetForm = /asset certification|cash on hand/i.test(text);
-  const bankStatement = /beginning balance|ending balance|account number/i.test(text);
-
-  if (facts.worksheetAnnual && facts.ticWages && Math.abs(facts.worksheetAnnual - facts.ticWages) > 1) {
-    add("must fix", "Worksheet total does not match the TIC wages",
-      "Worksheet total " + usd(facts.worksheetAnnual) + ". TIC employment or wages " + usd(facts.ticWages) + ".",
-      "Correct the form that is wrong and sign the correction. Do not leave both totals in the file.");
+  const verBlocks = text.split(/Employment Verification/i).slice(1);
+  for (const raw of verBlocks) {
+    const block = raw.trim();
+    const company = ((block.match(/([A-Za-z][A-Za-z0-9 .]+)\nEmployee:/) || [])[1] || "").trim();
+    const toEmployer = ((block.match(/To: \(Name and Address of Employer\)[^\n]*\n([A-Za-z][A-Za-z0-9 .]+)/i) || [])[1] || "").trim();
+    const name = toEmployer || company;
+    const rate = num((block.match(/Current Wages\/Salary:[^\d]{0,12}([\d,]+\.\d{2})/i) || [])[1]);
+    const ytd = num((block.match(/YTD[^\d]{0,8}([\d,]+\.\d{2})/i) || [])[1]);
+    if (name && (rate || ytd) && !/commissions|additional remarks/i.test(name)) facts.verified.push({ name, rate, ytd });
   }
-  if (facts.weeklyRate && facts.ticWages && Math.abs(facts.weeklyRate * 52 - facts.ticWages) < 1) {
-    add("must fix", "The $39,000 figure is a weekly rate times 52, not paystubs",
-      "The file says a weekly wage of " + usd(facts.weeklyRate) + " and a TIC wage total of " + usd(facts.ticWages) + ". " + usd(facts.weeklyRate) + " times 52 is " + usd(facts.weeklyRate * 52) + ". A matching product is not a reconstruction.",
-      "File the paystubs or the employer verification that support " + usd(facts.weeklyRate) + " a week. Do not treat the worksheet multiplication as the source.");
+  const weekly = num((text.match(/Weekly Regular\s*\$?\s*([\d,]+\.\d{2})/i) || text.match(/weekly wage of\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
+  facts.weeklyRate = weekly;
+  const projection = num((text.match(/Total income\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
+  facts.projection = projection;
+  const named = ((text.match(/Name of Employer:\s*1\.\s*([A-Za-z0-9 .]+)/i) || [])[1] || "").trim();
+  if (named && !facts.verified.some((v) => v.name.toLowerCase().includes(named.split(" ")[0].toLowerCase()))) {
+    facts.employers.push({ name: named, weeks: null });
   }
-  if (facts.employers.length) {
-    const detail = facts.employers.map((e) => e.name + (e.weeks ? " (" + e.weeks + " weeks)" : "")).join("; ");
-    add("must fix", "Employer support is not tied to pay",
-      "The file names " + detail + ". Seasonal weeks are a household statement, not pay.",
-      "For each employer, file the verification or pay records and show which dollars on the worksheet came from that employer.");
+  if (facts.worksheetLines.length >= 2) {
+    const sum = facts.worksheetLines.reduce((a, b) => a + b, 0);
+    add("must fix", "Worksheet lines are not tied to an employer",
+      "Worksheet lines " + facts.worksheetLines.map(usd).join(" + ") + " = " + usd(sum) + ". The total on the worksheet is " + usd(facts.worksheetAnnual) + ". None of those lines names the employer.",
+      "Write the employer and the source document next to each line. Remove any line that has no document.");
   }
-  if (facts.unattributed) {
-    add("correction", "A worksheet component has no employer on its line",
-      "Non-federal wage annual regular " + usd(facts.unattributed) + " is on the worksheet.",
-      "Name the employer and the document for this " + usd(facts.unattributed) + ", or remove it from the total.");
+  if (projection && facts.worksheetAnnual && Math.abs(projection - facts.worksheetAnnual) > 1) {
+    add("must fix", "Projection total does not match the worksheet total",
+      "Income projection tool says " + usd(projection) + ". Worksheet total is " + usd(facts.worksheetAnnual) + ".",
+      "Keep one annual figure. Show which stubs produce it. Do not leave both totals in the file.");
   }
-  if (facts.cashDeclared) {
-    add("correction", "Cash on hand is a declaration, not a verified balance",
-      "Worksheet asset line: Cash on Hand " + usd(facts.cashDeclared) + ". " + (bankStatement ? "A bank statement is also in the text." : "No bank beginning or ending balance is in this text."),
-      "Keep the declaration. Do not call " + usd(facts.cashDeclared) + " a verified account balance unless a statement shows it.");
+  if (facts.verified.length) {
+    add("watch", "Employment verification in the file",
+      facts.verified.map((v) => v.name + (v.rate ? " current " + usd(v.rate) : "") + (v.ytd ? " YTD " + usd(v.ytd) : "")).join("; ") + ".",
+      "Use this verification. Do not ask for a document that is already here.");
   }
-  if (hasSeasonal && !bankStatement) {
-    add("watch", "Seasonal certifications are not bank statements",
-      "The packet contains Self-Certification of Seasonal Employment. It does not contain a beginning or ending bank balance.",
-      "Do not file the seasonal form in the asset section as a bank statement.");
+  const verifiedNames = facts.verified.map((v) => v.name.toLowerCase());
+  const unsupported = facts.employers.filter((e) => !verifiedNames.some((n) => n.includes(e.name.toLowerCase().split(" ")[0])));
+  if (unsupported.length) {
+    add("must fix", "Named employers have no wage verification in this packet",
+      unsupported.map((e) => e.name + (e.weeks ? " (" + e.weeks + " weeks on the seasonal form)" : "")).join("; ") + ".",
+      "File a verification or pay record for each of these employers, or take them off the certification.");
   }
-  if (!hasTic) add("must fix", "No Tenant Income Certification text was found", "The dropped text has no Tenant Income Certification.", "Drop the certification page or confirm it is in the paper file.");
-  if (!hasWorksheet) add("correction", "No calculation worksheet total was found", "The dropped text has no Total Annual Income line.", "Add the worksheet that gets from the source documents to the certification.");
-  if (facts.recert) add("watch", "This is an annual recertification", "Effective date " + facts.effective + " is marked annual recertification.", "Do not apply the move-in six-month lease rule to this certification.");
-  return { facts, findings, seen: { hasTic, hasWorksheet, hasSeasonal, hasAssetForm, bankStatement } };
+  if (weekly && facts.ticWages && Math.abs(weekly * 52 - facts.ticWages) < 1) {
+    const ytd = facts.verified.find((v) => v.ytd);
+    add("must fix", "Confirm the pay frequency before using 52 weeks",
+      "Worksheet says weekly " + usd(weekly) + " times 52 = " + usd(facts.ticWages) + ". Verification shows current wages " + usd(weekly) + (ytd ? " and YTD " + usd(ytd.ytd) : "") + ". The frequency checkbox is not clean on the scan. If the " + usd(weekly) + " is biweekly, 26 periods is " + usd(weekly * 26) + ", which matches the YTD and not the TIC.",
+      "Mark the frequency box. If it is weekly, the YTD supports the rate and the TIC can stay. If it is biweekly, correct the TIC to " + usd(weekly * 26) + ".");
+  }
+  if (facts.cashDeclared != null && facts.includedCash === 0) {
+    add("correction", "Cash on hand is declared and then included at zero",
+      "Cash on Hand " + usd(facts.cashDeclared) + ". Included asset cash value " + usd(facts.includedCash) + ". No bank beginning or ending balance is in this text.",
+      "Either include the declared cash with the asset backup, or note why the included value is zero. Do not call it a verified bank balance.");
+  }
+  if (facts.recert) add("watch", "Annual recertification", "Effective date " + facts.effective + " is marked annual recertification.", "Do not apply the move-in six-month lease rule.");
+  return { facts, findings };
 }
 
 function renderPacket(result) {
