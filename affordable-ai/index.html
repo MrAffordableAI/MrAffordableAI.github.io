@@ -15,7 +15,7 @@
         <h1>Affordable AI File Reviewer</h1>
       </div>
     </div>
-    <p class="lede">Drop a tenant file. Findings are written only from lines in that file. A number you did not drop is not a finding.</p>
+    <p class="lede">Drop the resident file. The review says if you can send it, the income on the file, and what to change.</p>
   </header>
   <main>
     <section class="panel" id="setup">
@@ -83,14 +83,14 @@
       <button type="button" class="go" id="reviewBtn">Review this file</button>
     </section>
     <nav class="tabs" id="tabs">
-      <button type="button" class="on" data-tab="findings">Findings</button>
-      <button type="button" data-tab="model">How the file should look</button>
-      <button type="button" data-tab="letter">Manager review</button><button type="button" data-tab="brain">Ask the file</button>
+      <button type="button" class="on" data-tab="findings">What to change</button>
+      <button type="button" data-tab="model">What to leave</button>
+      <button type="button" data-tab="letter">Letter to the file</button><button type="button" data-tab="brain">Ask about this file</button>
     </nav>
     <section class="panel" id="findingsPanel"><div class="score" id="score">Waiting for a file.</div><div id="findings"></div></section>
     <section class="panel hidden" id="modelPanel"></section>
     <section class="panel hidden" id="letterPanel"><div class="letter-actions"><button type="button" id="printLetter">Print / save letter</button></div><article id="letter" class="letter"></article></section>
-    <section class="panel hidden" id="brainPanel"><p>This chat answers from the dropped file. A live Grok call is optional and uses a key you type. The key stays in this browser and is not in the page.</p><input id="grokKey" type="password" placeholder="Optional xAI key" style="width:100%;margin:8px 0;padding:8px"><div id="chatLog" class="letter"></div><textarea id="chatQ" placeholder="Ask about this file" style="width:100%;min-height:70px"></textarea><button type="button" class="go" id="askBtn">Ask</button></section>
+    <section class="panel hidden" id="brainPanel"><p>Ask a question about the file you dropped. The answer stays with that file.</p><input id="grokKey" type="password" placeholder="Optional xAI key" style="width:100%;margin:8px 0;padding:8px"><div id="chatLog" class="letter"></div><textarea id="chatQ" placeholder="Ask about this file" style="width:100%;min-height:70px"></textarea><button type="button" class="go" id="askBtn">Ask</button></section>
   </main>
   <footer><p>Specialist aid. Not a determination by the allocating agency, HUD, USDA, or the IRS.</p></footer>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -945,13 +945,14 @@ function reviewPacket(text) {
   facts.includedCash = num((text.match(/Included asset cash value\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
   facts.limit = num((text.match(/Qualifying Income limit at [\d.]+%\s*=\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
   facts.assistance = ((text.match(/rent assistance\?[\s\S]{0,40}source:\s*([A-Za-z ]+)/i) || [])[1] || "").trim();
+  facts.declaredMonthly = num((text.match(/Name of Employer:[\s\S]{0,80}?\$\s*([\d,]+\.\d{2})/i) || text.match(/Aldaylam\s*\$\s*([\d,]+\.\d{2})/i) || [])[1]);
   facts.weeklyRate = num((text.match(/Weekly Regular\s*\$?\s*([\d,]+\.\d{2})/i) || text.match(/weekly wage of\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
   facts.projection = num((text.match(/Total income\s*\$?\s*([\d,]+\.\d{2})/i) || [])[1]);
   facts.worksheetLines = [...text.matchAll(/\$?\s*([\d,]+\.\d{2})\s+1\.00\s+1\.00\s+\$?\s*[\d,]+\.\d{2}/g)].map((m) => num(m[1]));
   const comp = text.match(/HOUSEHOLD COMPOSITION[\s\S]{0,700}/i);
   if (comp) {
     const rows = [...comp[0].matchAll(/([A-Za-z][A-Za-z .'’-]+)\n(Head of Household|Spouse|Adult|Youth<18|Co-Head)/g)];
-    facts.members = rows.map((m) => ({ name: m[1].trim(), relation: m[2] }));
+    facts.members = rows.map((m) => ({ name: m[1].trim(), relation: m[2] === "Youth<18" ? "child under 18" : m[2] }));
   }
   if (!facts.members.length) {
     facts.members = [...text.matchAll(/^([A-Za-z]+)\s+(.+?)\s+([HSC])\s+NA/gm)].map((m) => ({
@@ -973,68 +974,80 @@ function reviewPacket(text) {
     const ytd = num((block.match(/YTD[^\d]{0,8}([\d,]+\.\d{2})/i) || [])[1]);
     if (name && (rate || ytd) && !/commissions/i.test(name)) facts.verified.push({ name, rate, ytd });
   }
-  const income = [];
+  const fixes = [];
+  const keep = [];
+  const say = (title, fileSays, change) => {
+    fixes.push({ title, fileSays, change });
+    findings.push({ severity: "must fix", title, quote: fileSays, correction: change });
+  };
   if (facts.worksheetLines.length) {
-    income.push("Worksheet lines " + facts.worksheetLines.map(usd).join(" + ") + " = " + usd(facts.worksheetLines.reduce((a, b) => a + b, 0)) + ". No employer is named on those lines.");
-    add("must fix", "Worksheet lines are not tied to an employer", income[0], "Name the employer and the source page on each line, or remove the line.");
+    say("Put an employer on each income line",
+      "The income sheet lists " + facts.worksheetLines.map(usd).join(", ") + ". None of those lines names who paid it.",
+      "Write the employer next to each line, or take the line off.");
   }
   if (facts.projection && facts.worksheetAnnual && Math.abs(facts.projection - facts.worksheetAnnual) > 1) {
-    add("must fix", "Projection total does not match the worksheet", "Projection tool " + usd(facts.projection) + ". Worksheet " + usd(facts.worksheetAnnual) + ".", "Keep one annual figure and show the stubs that produce it.");
+    say("Use one income number",
+      "One calculation page says " + usd(facts.projection) + ". The income sheet says " + usd(facts.worksheetAnnual) + ".",
+      "Cross out the number you are not using. The file can have only one yearly income.");
   }
-  facts.verified.forEach((v) => income.push(v.name + " verification: current " + (v.rate ? usd(v.rate) : "not read") + ", YTD " + (v.ytd ? usd(v.ytd) : "not read") + "."));
   const unsupported = facts.employers.filter((e) => !facts.verified.some((v) => v.name.toLowerCase().includes(e.name.toLowerCase().split(" ")[0])));
-  if (unsupported.length) add("must fix", "Named employers have no wage verification", unsupported.map((e) => e.name + " (" + e.weeks + " weeks on the seasonal form)").join("; ") + ".", "File a verification or pay record, or take the employer off the certification.");
-  if (/AG Life/i.test(text)) income.push("AG Life payroll is in the file and is not a worksheet line.");
-  if (facts.weeklyRate && facts.ticWages && Math.abs(facts.weeklyRate * 52 - facts.ticWages) < 1) {
-    add("must fix", "Confirm pay frequency before using 52 weeks", "Worksheet weekly " + usd(facts.weeklyRate) + " x 52 = " + usd(facts.ticWages) + ". Verification current " + usd(facts.weeklyRate) + ". If that rate is biweekly, 26 periods is " + usd(facts.weeklyRate * 26) + ".", "Mark the frequency box. Do not treat a matching annual figure as reconstructed pay.");
+  if (unsupported.length) {
+    say("Get pay proof for every named job",
+      unsupported.map((e) => e.name + " says " + e.weeks + " weeks of work and has no pay form or paycheck in this file").join(". ") + ".",
+      "Add the employer form or pay records, or take that job off the file.");
   }
-  if (facts.cashDeclared != null) add("correction", "Cash on hand is a declaration, not a bank balance", "Declared " + usd(facts.cashDeclared) + ". Included asset cash value " + (facts.includedCash == null ? "not read" : usd(facts.includedCash)) + ".", "Include it with backup, or note why the included value is zero.");
-  if (/I\/we do not have any assets/i.test(text)) add("watch", "Asset form is a household declaration", "The asset certification is in the file. The selected box is not clean on the scan. This is a declaration, not a verified asset balance.", "Confirm the checked box. Do not call the assets verified.");
-  if (facts.recert) add("watch", "Annual recertification", "Effective date " + facts.effective + ".", "Do not apply the move-in six-month lease rule.");
-  const open = findings.filter((f) => f.severity !== "watch").map((f) => f.title);
-  const disposition = open.length ? "Do not sign" : "No open correction in this text";
-  const household = facts.members.length ? facts.members.map((m) => m.name + " (" + m.relation + ")").join("; ") : "Household roster was not readable.";
+  if (/AG Life/i.test(text)) {
+    say("AG Life pay is not on the income sheet",
+      "The file has an AG Life payroll record. That pay is not one of the income lines.",
+      "Add it to the income sheet or take the payroll page out.");
+  }
+  if (facts.declaredMonthly && !facts.verified.length) {
+    say("This page is the resident's word, not proof of pay",
+      "The questionnaire says " + usd(facts.declaredMonthly) + " a month. That is " + usd(facts.declaredMonthly * 12) + " a year. There is no paycheck on this page.",
+      "Do not send the file from this page. Match this amount to the employer form.");
+  }
+  if (facts.weeklyRate && facts.ticWages && Math.abs(facts.weeklyRate * 52 - facts.ticWages) < 1) {
+    say("Check if the pay is weekly or every two weeks",
+      "The income sheet uses " + usd(facts.weeklyRate) + " a week for 52 weeks, which is " + usd(facts.ticWages) + ". The employer form also shows " + usd(facts.weeklyRate) + ", and the pay-period box is not clearly marked. If that amount is every two weeks, the year is " + usd(facts.weeklyRate * 26) + ", not " + usd(facts.ticWages) + ".",
+      "Mark the pay-period box. If it is weekly, leave the income. If it is every two weeks, change the income to " + usd(facts.weeklyRate * 26) + ".");
+  }
+  if (facts.cashDeclared != null && facts.includedCash === 0) {
+    say("Cash on hand and the income sheet do not match",
+      "The household says it has " + usd(facts.cashDeclared) + " cash. The income sheet includes " + usd(facts.includedCash) + ". There is no bank balance in this file.",
+      "Use the same cash number in both places, and attach the backup. Do not call this a bank balance.");
+  }
+  facts.verified.forEach((v) => keep.push(v.name + " is already in the file" + (v.rate ? ", current pay " + usd(v.rate) : "") + (v.ytd ? ", earned so far " + usd(v.ytd) : "") + ". Do not ask for that form again."));
+  if (facts.assistance) keep.push("Rent help is marked yes, from " + facts.assistance + ".");
+  if (facts.recert) keep.push("This is a yearly recertification" + (facts.effective ? " dated " + facts.effective : "") + ". Do not treat it as a new move-in.");
+  if (/I\/we do not have any assets/i.test(text)) keep.push("The asset form is the household saying what they have. The checked box is hard to read. Confirm the box. Do not call the assets verified.");
+  const tenant = facts.property || facts.worksheetAnnual || facts.ticWages || facts.members.length || facts.verified.length || facts.employers.length || facts.declaredMonthly;
+  const send = !tenant ? "This is not a resident file." : fixes.length ? "No. Do not send this file." : "Nothing on these pages has to be changed before you send it.";
+  const people = facts.members.length ? facts.members.map((m) => m.name + ", " + m.relation.toLowerCase()).join("; ") : "The people in the unit were not readable.";
+  const using = facts.worksheetAnnual || facts.ticWages;
   const letter = [
-    "MANAGER FILE REVIEW — " + (facts.property || "Property") + " unit " + (facts.unit || "—"),
-    "Disposition: " + disposition + ". This is a file desk, not an agency determination.",
+    send,
     "",
-    "1. File. " + (facts.property || "Property not read") + ", unit " + (facts.unit || "not read") + ". Effective " + (facts.effective || "not read") + ". " + (facts.recert ? "Annual recertification." : "Certification type not marked in this text.") + (facts.assistance ? " Rent assistance: " + facts.assistance + "." : ""),
-    "2. Household. " + household,
-    "3. Income. TIC wages " + (facts.ticWages ? usd(facts.ticWages) : "not read") + ". Worksheet annual " + (facts.worksheetAnnual ? usd(facts.worksheetAnnual) : "not read") + ". " + income.join(" "),
-    "4. Assets. Declared cash " + (facts.cashDeclared ? usd(facts.cashDeclared) : "none read") + ". Included cash " + (facts.includedCash == null ? "not read" : usd(facts.includedCash)) + ". Asset income " + (facts.assetIncome == null ? "not read" : usd(facts.assetIncome)) + "." + (/I\/we do not have any assets/i.test(text) ? " Asset certification is a household declaration, not a verified balance." : ""),
-    "5. Before signature. " + (open.length ? open.join("; ") + "." : "No correction was opened from this text."),
-    "6. Limit. This review does not decide eligibility. The file's own limit figure, if present, is " + (facts.limit ? usd(facts.limit) : "not in this text") + "."
-  ].join("\n");
-  return { facts, findings, income, open, disposition, letter };
+    (facts.property || "Property not named") + (facts.unit ? ", unit " + facts.unit : ""),
+    "People in the unit: " + people,
+    using ? "Income the file is using: " + usd(using) + "." : "No yearly income was on these pages.",
+    facts.limit ? "The file's own income limit is " + usd(facts.limit) + ". That is the file's number, not a decision that the household qualifies." : "",
+    "",
+    fixes.length ? "Change these before you send it:" : "No change was opened from these pages.",
+    fixes.map((f, i) => (i + 1) + ". " + f.title + "\nThe file says: " + f.fileSays + "\nChange: " + f.change).join("\n\n"),
+    "",
+    keep.length ? "Already in the file, leave it:\n" + keep.map((k) => "- " + k).join("\n") : ""
+  ].filter(Boolean).join("\n");
+  return { facts, findings, fixes, keep, send, letter };
 }
 function askBrain(text, question) {
   const desk = reviewPacket(text);
   const q = question.toLowerCase();
-  if (/sign|pay for|depend/.test(q)) return desk.disposition + ". " + desk.open.join("; ") + ".";
-  if (/who|household|member/.test(q)) return desk.facts.members.length ? desk.facts.members.map((m) => m.name + " (" + m.relation + ")").join("; ") : "Roster was not readable.";
-  if (/asset|cash|bank/.test(q)) return desk.findings.filter((f) => /cash|asset/i.test(f.title + f.quote)).map((f) => f.quote).join(" ") || "No asset amount was read.";
-  if (/income|wage|employ|pay/.test(q)) return desk.income.join(" ") || "No income line was read.";
+  if (/sign|send|pay for|depend/.test(q)) return desk.send + " " + desk.fixes.map((f) => f.title).join(". ") + ".";
+  if (/who|household|member|people/.test(q)) return desk.facts.members.length ? desk.facts.members.map((m) => m.name + ", " + m.relation.toLowerCase()).join("; ") : "The people in the unit were not readable.";
+  if (/income|wage|employ|pay|cash|asset|bank/.test(q)) return desk.letter;
   const words = q.split(/\W+/).filter((w) => w.length > 3);
   const hit = text.split(/\n/).find((line) => words.some((w) => line.toLowerCase().includes(w)));
-  return hit ? "From the file: " + hit.trim() : "That is not in this text layer. I will not invent it.";
-}
-
-function renderPacket(result) {
-  const findings = result.findings;
-  const must = findings.filter((f) => f.severity === "must fix").length;
-  $("score").textContent = result.disposition + " · " + must + " must fix · " + findings.length + " notes";
-  $("findings").innerHTML = findings.map((f) => '<article class="finding ' + (f.severity === "must fix" ? "critical" : f.severity === "correction" ? "needed" : "watch") + '"><div class="meta">' + f.severity + '</div><h3>' + f.title + '</h3><p><strong>From the file.</strong> ' + f.quote + '</p><p><strong>Correction.</strong> ' + f.correction + '</p></article>').join("");
-  $("letter").innerText = result.letter;
-  if (result.facts.property) $("property").value = result.facts.property;
-  if (result.facts.unit) $("unit").value = result.facts.unit;
-  if (result.facts.head) $("head").value = result.facts.head;
-  window.__desk = result;
-  showTab("letter");
-}
-function review() {
-  const text = (typeof extractedText === "string" && extractedText) || (($("extracted") && $("extracted").textContent) || "");
-  if (!text.trim()) { $("score").textContent = "No file text to review."; return; }
-  renderPacket(reviewPacket(text));
+  return hit ? "The file says: " + hit.trim() : "That is not on these pages. I will not guess it.";
 }
 async function askFile() {
   const text = (typeof extractedText === "string" && extractedText) || (($("extracted") && $("extracted").textContent) || "");
@@ -1067,6 +1080,24 @@ const askBtn = document.getElementById("askBtn");
 if (askBtn) askBtn.addEventListener("click", askFile);
 const saved = localStorage.getItem("xaiKey");
 if (saved && document.getElementById("grokKey")) document.getElementById("grokKey").value = saved;
+
+
+function renderPacket(result) {
+  $("score").textContent = result.send || "Review ready";
+  $("findings").innerHTML = (result.fixes || []).map((f) => '<article class="finding critical"><h3>' + f.title + '</h3><p><strong>The file says.</strong> ' + f.fileSays + '</p><p><strong>Change.</strong> ' + f.change + '</p></article>').join("");
+  $("letter").innerText = result.letter;
+  const model = document.getElementById("modelPanel");
+  if (model) model.innerText = (result.keep || []).length ? result.keep.join("\n") : "Nothing on these pages was marked to leave as-is.";
+  if (result.facts.property) $("property").value = result.facts.property;
+  if (result.facts.unit) $("unit").value = result.facts.unit;
+  if (result.facts.head) $("head").value = result.facts.head;
+  showTab("letter");
+}
+function review() {
+  const text = (typeof extractedText === "string" && extractedText) || (($("extracted") && $("extracted").textContent) || "");
+  if (!text.trim()) { $("score").textContent = "Drop a resident file first."; return; }
+  renderPacket(reviewPacket(text));
+}
 
 </script>
 </body>
