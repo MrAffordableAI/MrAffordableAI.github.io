@@ -13,6 +13,10 @@
   main { max-width:420px; margin:0 auto; padding:10px 12px 20px; position:relative; }
   h1 { margin:4px 0 0; font-size:26px; }
   .sub { margin:2px 0 8px; font-size:13px; opacity:.8; }
+  .board, .piece { touch-action: none; }
+  #drag { position:fixed; z-index:30; display:none; pointer-events:none; transform:translate(-50%, -130%); }
+  .cell.ok { background: rgba(80, 210, 130, .7); }
+  .cell.no { background: rgba(220, 70, 50, .55); }
   .bar { display:flex; gap:6px; }
   .stat { flex:1; background:rgba(255,255,255,.08); border-radius:12px; padding:6px 8px; }
   .stat b { display:block; font-size:18px; }
@@ -42,7 +46,7 @@
 <body>
 <main>
   <h1>River Jam</h1>
-  <p class="sub">Bombs, lightning, and a color burst. Three clears in a row starts fever.</p>
+  <p class="sub">Drag a piece onto the board. Green means it fits. Let go to drop it.</p>
   <div class="bar">
     <div class="stat"><b id="score">0</b><span>score</span></div>
     <div class="stat"><b id="best">0</b><span>best</span></div>
@@ -59,6 +63,7 @@
     <button type="button" class="ghost" id="again">New river</button>
   </div>
 </main>
+<div id="drag"></div>
 <div id="over"><div class="card"><h2 id="overTitle">River jammed</h2><p id="overText"></p><button type="button" id="cont">Bomb the middle</button> <button type="button" class="ghost" id="closeOver">Done</button></div></div>
 <script>
 const N = 8;
@@ -173,7 +178,8 @@ function draw() {
       s.textContent = board[r][c].power === "bomb" ? "💣" : board[r][c].power === "bolt" ? "⚡" : board[r][c].power === "burst" ? "✦" : "";
       d.appendChild(s);
     }
-    d.onclick = () => drop(r, c);
+    d.dataset.r = r;
+    d.dataset.c = c;
     boardEl.appendChild(d);
   }
   document.getElementById("tray").innerHTML = "";
@@ -193,12 +199,81 @@ function draw() {
       mini.appendChild(dot);
     }));
     box.appendChild(mini);
-    box.onclick = () => { selected = i; draw(); };
+    box.onpointerdown = (e) => startDrag(e, i, box);
     document.getElementById("tray").appendChild(box);
   });
   const stage = document.querySelector(".stage");
   fx.width = stage.clientWidth;
   fx.height = stage.clientHeight;
+}
+function ghostFor(p) {
+  const mini = document.createElement("div");
+  mini.className = "mini";
+  mini.style.gridTemplateColumns = "repeat(" + p.cells[0].length + ", 22px)";
+  p.cells.forEach(row => row.forEach(v => {
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    dot.style.width = "22px";
+    dot.style.height = "22px";
+    dot.style.background = v ? p.color : "transparent";
+    dot.textContent = v && p.power === "bomb" ? "💣" : v && p.power === "bolt" ? "⚡" : v && p.power === "burst" ? "✦" : "";
+    mini.appendChild(dot);
+  }));
+  return mini;
+}
+function cellAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const cell = el && el.closest ? el.closest(".cell") : null;
+  if (!cell || !boardEl.contains(cell)) return null;
+  return { r: Number(cell.dataset.r), c: Number(cell.dataset.c) };
+}
+function preview(r, c) {
+  [...boardEl.children].forEach(el => el.classList.remove("ok", "no"));
+  if (!drag || r == null) return;
+  const p = tray[drag.index];
+  const ok = fits(p, r, c);
+  for (let y = 0; y < p.cells.length; y++) for (let x = 0; x < p.cells[0].length; x++) if (p.cells[y][x]) {
+    const cell = boardEl.querySelector('[data-r="' + (r + y) + '"][data-c="' + (c + x) + '"]');
+    if (cell) cell.classList.add(ok ? "ok" : "no");
+  }
+}
+function startDrag(e, index, box) {
+  selected = index;
+  drag = { index, pointer: e.pointerId };
+  box.setPointerCapture(e.pointerId);
+  const ghost = document.getElementById("drag");
+  ghost.innerHTML = "";
+  ghost.appendChild(ghostFor(tray[index]));
+  ghost.style.display = "block";
+  ghost.style.left = e.clientX + "px";
+  ghost.style.top = e.clientY + "px";
+  document.getElementById("yell").textContent = "Drag onto a green spot, then let go.";
+  box.onpointermove = moveDrag;
+  box.onpointerup = endDrag;
+  box.onpointercancel = endDrag;
+}
+function moveDrag(e) {
+  if (!drag) return;
+  const ghost = document.getElementById("drag");
+  ghost.style.left = e.clientX + "px";
+  ghost.style.top = e.clientY + "px";
+  const hit = cellAt(e.clientX, e.clientY);
+  preview(hit && hit.r, hit && hit.c);
+}
+function endDrag(e) {
+  if (!drag) return;
+  const hit = cellAt(e.clientX, e.clientY);
+  const index = drag.index;
+  drag = null;
+  document.getElementById("drag").style.display = "none";
+  preview(null, null);
+  if (hit && tray[index] && fits(tray[index], hit.r, hit.c)) {
+    selected = index;
+    drop(hit.r, hit.c);
+  } else {
+    document.getElementById("yell").textContent = "That spot is blocked. Drag it to an open green spot.";
+    draw();
+  }
 }
 function drop(r, c) {
   const p = tray[selected];
