@@ -15,7 +15,7 @@
         <h1>Affordable AI File Reviewer</h1>
       </div>
     </div>
-    <p class="lede">Drop a tenant file. The specialist memo reads that file, names the state agency, and writes the corrections.</p>
+    <p class="lede">Drop a tenant file. Findings are written only from lines in that file. A number you did not drop is not a finding.</p>
   </header>
   <main>
     <section class="panel" id="setup">
@@ -896,5 +896,111 @@ document.querySelectorAll(".tabs button").forEach((btn) => btn.addEventListener(
 renderDocs();
 
 </script>
+
+<script>
+function moneyNear(text, label) {
+  const re = new RegExp(label + "[^\\d$]{0,24}\\$?\\s*([\\d,]+(?:\\.\\d{2})?)", "i");
+  const hit = text.match(re);
+  return hit ? Number(hit[1].replace(/,/g, "")) : null;
+}
+function iso(mdy) {
+  const m = String(mdy).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (!m) return "";
+  return m[3] + "-" + m[1].padStart(2, "0") + "-" + m[2].padStart(2, "0");
+}
+function days(a, b) {
+  if (!a || !b) return null;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  return Number.isNaN(ms) ? null : Math.round(ms / 86400000);
+}
+function usd(n) {
+  return Number(n).toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+function lineWith(text, re) {
+  const lines = text.split(/\n/);
+  return lines.find((line) => re.test(line)) || "";
+}
+function review() {
+  const text = extractedText || "";
+  if (!text.trim()) {
+    $("score").textContent = "No file text to review. A photo with no text layer was not read.";
+    $("findings").innerHTML = "";
+    $("letter").innerText = "";
+    return;
+  }
+  const findings = [];
+  const add = (severity, title, quote, correction) => findings.push({ severity, title, quote, correction });
+  const tic = moneyNear(text, "annual income") || moneyNear(text, "TIC");
+  const stubs = [...text.matchAll(/pay stub[^\n$]{0,40}\$?\s*([\d,]+\.\d{2})/ig)].map((m) => ({
+    amount: Number(m[1].replace(/,/g, "")),
+    line: m[0]
+  }));
+  const stubDates = [...text.matchAll(/pay stub[^\d]{0,24}(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/ig)].map((m) => iso(m[1]));
+  let annual = null;
+  let freq = "";
+  if (stubs.length >= 2 && stubDates.length >= 2) {
+    const gap = Math.abs(days(stubDates[0], stubDates[1]));
+    if (gap >= 12 && gap <= 16) { freq = "biweekly"; annual = ((stubs[0].amount + stubs[1].amount) / 2) * 26; }
+    else if (gap >= 5 && gap <= 9) { freq = "weekly"; annual = ((stubs[0].amount + stubs[1].amount) / 2) * 52; }
+    else if (gap >= 27 && gap <= 33) { freq = "monthly"; annual = ((stubs[0].amount + stubs[1].amount) / 2) * 12; }
+  }
+  if (tic && annual && Math.abs(tic - annual) > 1) {
+    add("must fix", "Certification income does not match the pay stubs in the file",
+      "File says annual income " + usd(tic) + ". Stubs in the file: " + stubs.map((s) => usd(s.amount)).join(" and ") + (stubDates.length ? " dated " + stubDates.join(" and ") : "") + ". " + (freq ? "Those dates are " + freq + ", so the annual figure is " + usd(annual) + "." : "Pay frequency is not clear, so this is not annualized."),
+      "Redo the worksheet from these stubs. Correct the TIC to " + usd(annual) + " or add the stubs that support " + usd(tic) + ". Do not leave both figures in the file.");
+  }
+  const lease = text.match(/lease[^\d]{0,12}(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})[^\d]{0,16}(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i);
+  if (lease && document.getElementById("certType").value === "movein") {
+    const start = iso(lease[1]);
+    const end = iso(lease[2]);
+    const n = days(start, end);
+    if (n !== null && n < 180) add("must fix", "Initial lease is shorter than six months",
+      "File says lease " + lease[1] + " through " + lease[2] + " (" + n + " days).",
+      "Execute a lease or addendum of at least six months. Keep the short lease in the file as the error.");
+  }
+  const effective = lease ? iso(lease[1]) : (document.getElementById("effective").value || "");
+  if (stubDates[0] && effective) {
+    const age = days(stubDates[0], effective);
+    if (age !== null && age > 120) add("must fix", "Oldest pay stub is more than 120 days before the lease start",
+      "Oldest stub " + stubDates[0] + " is " + age + " days before " + effective + ".",
+      "Get stubs dated within 120 days of the effective date and recalculate. The old stubs do not support this certification.");
+  }
+  if (/owner signature missing/i.test(text)) add("must fix", "Owner signature is missing",
+    lineWith(text, /owner signature missing/i),
+    "Sign and date the TIC. Do not backdate.");
+  if (/no student status form/i.test(text)) add("must fix", "Student status form is not in the file",
+    lineWith(text, /no student status form/i) + (/full-time student/i.test(text) ? " The file also names a full-time student." : ""),
+    "Complete the student status certification. If a member is full-time, add the school verification or the Section 42 exception.");
+  if (/no home certification/i.test(text) && [...document.querySelectorAll("input[name=program]:checked")].some((el) => el.value === "home")) {
+    add("correction", "HOME certification is not in the file", lineWith(text, /no home certification/i),
+      "Complete the HOME income certification. Do not rely on the TIC alone for a layered unit.");
+  }
+  if (/no calculation worksheet/i.test(text)) add("correction", "Calculation worksheet is not in the file",
+    lineWith(text, /no calculation worksheet/i),
+    "Add the tape that gets from the stubs to the annual figure. The math belongs in the file, not only on this screen.");
+  if (/no asset self-certification/i.test(text) || /no bank statement/i.test(text)) add("correction", "Asset backup is not in the file",
+    [lineWith(text, /no asset self-certification/i), lineWith(text, /no bank statement/i)].filter(Boolean).join(" "),
+    "File the asset self-certification or a current statement.");
+  if (/no vawa/i.test(text)) add("correction", "VAWA addendum is not in the file", lineWith(text, /no vawa/i),
+    "Add the VAWA notice and lease addendum and note that the household received them.");
+  if (/no move-in inspection/i.test(text)) add("correction", "Move-in inspection is not in the file", lineWith(text, /no move-in inspection/i),
+    "Complete the move-in inspection and file it.");
+  if (stubs.length && stubs.length < 4) add("watch", "Only " + stubs.length + " pay stubs are in the file",
+    stubs.map((s) => s.line).join(" | "),
+    "The usual source-document set is four to six consecutive stubs. Two stubs can show frequency. They are thin support until the rest are filed.");
+  const rentLine = lineWith(text, /tenant rent|gross rent|max rent/i);
+  if (!rentLine) add("watch", "Rent was not reviewed", "The file text has no tenant rent, utility allowance, or max rent.",
+    "This pass does not invent a rent finding. Enter those only if they are on the certification you dropped.");
+  const must = findings.filter((f) => f.severity === "must fix").length;
+  const corr = findings.filter((f) => f.severity === "correction").length;
+  const watch = findings.filter((f) => f.severity === "watch").length;
+  $("score").textContent = must + " must fix · " + corr + " corrections · " + watch + " not decided from this file";
+  $("findings").innerHTML = findings.map((f) => '<article class="finding ' + (f.severity === "must fix" ? "critical" : f.severity === "correction" ? "needed" : "watch") + '"><div class="meta">' + f.severity + '</div><h3>' + f.title + '</h3><p><strong>From the file.</strong> ' + f.quote + '</p><p><strong>Correction.</strong> ' + f.correction + '</p></article>').join("");
+  const who = ($("property").value || "Property") + " unit " + ($("unit").value || "—") + " · " + ($("head").value || "household");
+  $("letter").innerText = "File corrections — " + who + "\nReviewed from the dropped text only. Not an agency determination.\n\n" + findings.filter((f) => f.severity !== "watch").map((f, i) => (i + 1) + ". " + f.title + "\nFrom the file: " + f.quote + "\nCorrection: " + f.correction).join("\n\n") + "\n\nNot decided from this file:\n" + (findings.filter((f) => f.severity === "watch").map((f) => "- " + f.title + " — " + f.quote).join("\n") || "- None");
+  showTab("findings");
+}
+</script>
+
 </body>
 </html>
