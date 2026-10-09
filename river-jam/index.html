@@ -172,7 +172,20 @@ function place(piece, r, c) {
     document.body.classList.add("shake");
     setTimeout(() => document.body.classList.remove("shake"), 280);
     beep(piece.power ? 180 : 420, 0.12, piece.power ? "sawtooth" : "square");
-    if (fever) fever--;
+    if (lines) {
+      linesLeft -= lines;
+      if (linesLeft <= 0) {
+        if (level < 100) {
+          level += 1;
+          localStorage.setItem("riverjam-level", level);
+          popText("LEVEL " + level);
+          setTimeout(() => start(true), 500);
+        } else {
+          popText("LEVEL 100 CLEAR");
+          localStorage.setItem("riverjam-level", 100);
+        }
+      } else document.getElementById("yell").textContent = linesLeft + " lines left on level " + level;
+    }
   } else combo = 0;
   document.getElementById("score").textContent = score;
   document.getElementById("combo").textContent = combo;
@@ -340,29 +353,30 @@ function tick() {
   });
   requestAnimationFrame(tick);
 }
-const themes = [
-  { name: "Outer space", art: "art/space.jpg" },
-  { name: "Fantasy land", art: "art/fantasy.jpg" },
-  { name: "Ocean palace", art: "art/ocean.jpg" }
-];
-let themeIndex = 0;
+const arts = ["art/space.jpg", "art/fantasy.jpg", "art/ocean.jpg", "art/volcano.jpg", "art/ice.jpg", "art/city.jpg"];
+const worlds = ["Outer space","Moon dock","Ring planet","Comet run","Nebula gate","Star harbor","Void reef","Solar flare","Asteroid belt","Galaxy rim","Fantasy land","Mushroom grove","Castle falls","Dragon pass","Cloud islands","Wizard marsh","Crystal cave","Fairy river","Giant oak","Rune bridge","Ocean palace","Coral crown","Jelly trench","Sunken gold","Tide gate","Pearl court","Kelp forest","Abyss light","Whale road","Reef storm","Volcano realm","Lava bridge","Ember pit","Ash dunes","Magma falls","Cinder keep","Obsidian stair","Fire river","Caldera","Spark canyon","Ice kingdom","Frost castle","Aurora field","Glacier bay","Snow pine","Crystal lake","Frozen gate","Moon ice","Hail ridge","White harbor","Neon city","Rain alley","Hover dock","Sign market","Night river","Tower row","Pink storm","Blue mile","Roof garden","Last train","Candy dunes","Soda spring","Gumdrop hill","Licorice cave","Mint harbor","Cherry clouds","Caramel pit","Lemon lights","Sugar fort","Fizz bay","Jungle ruin","Vine temple","Parrot cliff","Gold idol","Moss bridge","Tiger fog","Banana dock","Fern palace","Snake river","Drum hill","Haunted orchard","Pumpkin gate","Bat tower","Ghost pier","Witch kiln","Bone bridge","Raven wood","Lantern yard","Spider loft","Moon grave","Desert glass","Dune gate","Mirage well","Sun pyramid","Scorpion pass","Oasis night","Sand clock","Camel road","Star camp","Red canyon","Storm atoll","Thunder reef","Wind mill","Rain castle","Lightning bay","Cloud wreck","Hail dock","Squall road","Typhoon eye","Final crown"];
+let level = Math.min(100, Number(localStorage.getItem("riverjam-level") || 1));
+let linesLeft = 2;
 function applyTheme() {
-  const theme = themes[themeIndex % themes.length];
-  document.getElementById("scene").style.backgroundImage = "url(" + theme.art + ")";
-  document.getElementById("themeName").textContent = theme.name;
+  const art = arts[(level - 1) % arts.length];
+  document.getElementById("scene").style.backgroundImage = "url(" + art + ")";
+  document.getElementById("themeName").textContent = "Level " + level + " · " + worlds[level - 1];
+  linesLeft = 2 + Math.floor((level - 1) / 10);
+  document.getElementById("yell").textContent = "Clear " + linesLeft + " lines. World " + level + " of 100.";
 }
-  function start() {
+function start(keepScore) {
   applyTheme();
-  board = empty(); score = 0; combo = 0; fever = 0; continued = false; selected = 0; parts = [];
+  board = empty();
+  if (!keepScore) score = 0;
+  combo = 0; fever = 0; continued = false; selected = 0; parts = [];
   tray = [makePiece(), makePiece(), { cells:[[1]], color:"#e36b4a", power:"bomb" }];
-  document.getElementById("score").textContent = 0;
+  document.getElementById("score").textContent = score || 0;
   document.getElementById("combo").textContent = 0;
-  document.getElementById("yell").textContent = "A bomb is in the tray.";
   document.getElementById("over").classList.remove("show");
   draw();
 }
 document.getElementById("flip").onclick = () => { if (tray[selected]) { tray[selected].cells = flip(tray[selected].cells); draw(); } };
-document.getElementById("again").onclick = () => { themeIndex++; start(); };
+document.getElementById("again").onclick = () => start(false);
 document.getElementById("closeOver").onclick = () => document.getElementById("over").classList.remove("show");
 document.getElementById("cont").onclick = () => {
   continued = true;
