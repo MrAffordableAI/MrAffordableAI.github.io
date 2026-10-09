@@ -65,7 +65,7 @@
   <div class="tray" id="tray"></div>
   <div class="row">
     <button type="button" id="flip">Flip</button>
-    <button type="button" class="ghost" id="again">New river</button>
+    <button type="button" class="ghost" id="soundBtn">Sound on</button>
   </div>
 </main>
 <canvas id="sky"></canvas>
@@ -325,7 +325,57 @@ function skyShow(kind) {
   if (kind === "meteor") for (let i = 0; i < 14; i++) skyBits.push({ kind, x: Math.random() * sky.width, y: -30, vx: 4, vy: 7, life: 40, color: "#ffb15a" });
   document.body.dataset.effect = kind;
 }
-function tick() {
+let skyLive = [];
+let mood = "space";
+let musicOn = true;
+let musicTimer = null;
+const moods = ["space", "fantasy", "ocean", "volcano", "ice", "city"];
+function fillSky() {
+  const sky = document.getElementById("sky");
+  sky.width = innerWidth; sky.height = innerHeight;
+  skyLive = [];
+  if (mood === "space") {
+    for (let i = 0; i < 3; i++) skyLive.push({ kind: "planet", x: 40 + i * 120, y: 50 + i * 30, r: 16 + i * 6, hue: i * 40 });
+    for (let i = 0; i < 5; i++) skyLive.push({ kind: "comet", x: Math.random() * sky.width, y: Math.random() * 180, vx: 3 + Math.random() * 2, vy: 1 });
+  }
+  if (mood === "fantasy") for (let i = 0; i < 18; i++) skyLive.push({ kind: "firefly", x: Math.random() * sky.width, y: Math.random() * sky.height, a: Math.random() * 6 });
+  if (mood === "ocean") for (let i = 0; i < 16; i++) skyLive.push({ kind: "bubble", x: Math.random() * sky.width, y: sky.height + Math.random() * 200, r: 3 + Math.random() * 6 });
+  if (mood === "volcano") for (let i = 0; i < 20; i++) skyLive.push({ kind: "ember", x: Math.random() * sky.width, y: sky.height - Math.random() * 80 });
+  if (mood === "ice") for (let i = 0; i < 24; i++) skyLive.push({ kind: "snow", x: Math.random() * sky.width, y: Math.random() * sky.height });
+  if (mood === "city") for (let i = 0; i < 30; i++) skyLive.push({ kind: "rain", x: Math.random() * sky.width, y: Math.random() * sky.height });
+}
+function drawSky(sctx, w, h) {
+  skyLive.forEach(p => {
+    sctx.globalAlpha = 0.85;
+    if (p.kind === "planet") { sctx.fillStyle = "hsl(" + p.hue + ",70%,62%)"; sctx.beginPath(); sctx.arc(p.x, p.y, p.r, 0, 7); sctx.fill(); }
+    if (p.kind === "comet") { p.x += p.vx; p.y += p.vy; if (p.x > w + 40) { p.x = -20; p.y = Math.random() * 160; } sctx.strokeStyle = "#fff"; sctx.strokeRect(p.x, p.y, 26, 2); }
+    if (p.kind === "firefly") { p.a += 0.04; p.y += Math.sin(p.a) * 0.4; sctx.fillStyle = "#ffe08a"; sctx.fillRect(p.x, p.y, 3, 3); }
+    if (p.kind === "bubble") { p.y -= 0.8; if (p.y < -10) p.y = h; sctx.strokeStyle = "#bfefff"; sctx.strokeRect(p.x, p.y, p.r, p.r); }
+    if (p.kind === "ember") { p.y -= 1.4; p.x += Math.sin(p.y / 12); if (p.y < -10) { p.y = h; p.x = Math.random() * w; } sctx.fillStyle = "#ff7a3c"; sctx.fillRect(p.x, p.y, 3, 3); }
+    if (p.kind === "snow") { p.y += 0.7; if (p.y > h) p.y = 0; sctx.fillStyle = "#fff"; sctx.fillRect(p.x, p.y, 2, 2); }
+    if (p.kind === "rain") { p.y += 6; if (p.y > h) p.y = 0; sctx.strokeStyle = "#f3c"; sctx.strokeRect(p.x, p.y, 1, 10); }
+  });
+}
+function playMusic() {
+  if (!musicOn) return;
+  if (audio.state === "suspended") audio.resume();
+  const scales = { space: [220, 277, 330], fantasy: [262, 330, 392], ocean: [196, 247, 294], volcano: [146, 174, 196], ice: [349, 440, 523], city: [247, 311, 370] };
+  const notes = scales[mood] || scales.space;
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = mood === "volcano" || mood === "city" ? "square" : "sine";
+  o.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+  g.gain.setValueAtTime(0.03, audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.45);
+  o.connect(g); g.connect(audio.destination);
+  o.start(); o.stop(audio.currentTime + 0.5);
+}
+function armMusic() {
+  if (musicTimer) clearInterval(musicTimer);
+  playMusic();
+  musicTimer = setInterval(playMusic, mood === "city" ? 280 : 700);
+}
+  function tick() {
   ctx.clearRect(0, 0, fx.width, fx.height);
   parts = parts.filter(p => p.life > 0);
   parts.forEach(p => {
@@ -351,6 +401,7 @@ function tick() {
     if (p.kind === "hurricane") { p.ang += 0.25; p.rad += 4; sctx.beginPath(); sctx.arc(p.x + Math.cos(p.ang) * p.rad, p.y + Math.sin(p.ang) * p.rad, 4, 0, 7); sctx.fill(); }
     if (p.kind === "meteor") { p.x += p.vx; p.y += p.vy; sctx.strokeRect(p.x, p.y, 28, 3); }
   });
+  drawSky(sctx, sky.width, sky.height);
   requestAnimationFrame(tick);
 }
 const arts = ["art/space.jpg", "art/fantasy.jpg", "art/ocean.jpg", "art/volcano.jpg", "art/ice.jpg", "art/city.jpg"];
@@ -359,10 +410,12 @@ let level = Math.min(100, Number(localStorage.getItem("riverjam-level") || 1));
 let linesLeft = 2;
 function applyTheme() {
   const art = arts[(level - 1) % arts.length];
+  mood = moods[(level - 1) % moods.length];
   document.getElementById("scene").style.backgroundImage = "url(" + art + ")";
   document.getElementById("themeName").textContent = "Level " + level + " · " + worlds[level - 1];
   linesLeft = 2 + Math.floor((level - 1) / 10);
-  document.getElementById("yell").textContent = "Clear " + linesLeft + " lines. World " + level + " of 100.";
+  document.getElementById("yell").textContent = "Clear " + linesLeft + " lines. " + mood + " sky. Tap once for music.";
+  fillSky();
 }
 function start(keepScore) {
   applyTheme();
@@ -376,6 +429,8 @@ function start(keepScore) {
   draw();
 }
 document.getElementById("flip").onclick = () => { if (tray[selected]) { tray[selected].cells = flip(tray[selected].cells); draw(); } };
+document.getElementById("soundBtn").onclick = () => { musicOn = !musicOn; document.getElementById("soundBtn").textContent = musicOn ? "Sound on" : "Sound off"; if (musicOn) armMusic(); else if (musicTimer) clearInterval(musicTimer); };
+document.body.addEventListener("pointerdown", () => { if (musicOn && !musicTimer) armMusic(); }, { once: true });
 document.getElementById("again").onclick = () => start(false);
 document.getElementById("closeOver").onclick = () => document.getElementById("over").classList.remove("show");
 document.getElementById("cont").onclick = () => {
