@@ -44,6 +44,10 @@
   #over { position:fixed; inset:0; background:rgba(4,16,18,.84); display:none; align-items:center; justify-content:center; padding:18px; }
   #over.show { display:flex; }
   .card { background:var(--foam); color:#123; border-radius:18px; padding:18px; max-width:340px; }
+  body.flash-bomb { animation: bombFlash .2s ease-out; }
+  @keyframes bombFlash { 0% { filter: brightness(1.6) saturate(1.4); } 100% { filter: none; } }
+  .cell.clearing { animation: cellPop .25s ease-out; }
+  @keyframes cellPop { 0% { transform: scale(1.3); opacity:1; } 100% { transform: scale(0.6); opacity:0; } }
 </style>
 </head>
 <body>
@@ -83,16 +87,93 @@ let skyBits = [];
 best = Number(localStorage.getItem("riverjam-best") || 0);
 document.getElementById("best").textContent = best;
 const audio = new (window.AudioContext || window.webkitAudioContext)();
-function beep(freq, dur, type) {
+function ensureAudio() {
   if (audio.state === "suspended") audio.resume();
+}
+function beep(freq, dur, type) {
+  ensureAudio();
   const o = audio.createOscillator();
   const g = audio.createGain();
   o.type = type || "square";
   o.frequency.value = freq;
-  g.gain.setValueAtTime(0.05, audio.currentTime);
+  g.gain.setValueAtTime(0.08, audio.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
   o.connect(g); g.connect(audio.destination);
   o.start(); o.stop(audio.currentTime + dur);
+}
+function playNoise(duration = 0.35, volume = 0.3) {
+  ensureAudio();
+  const bufferSize = Math.floor(audio.sampleRate * duration);
+  const buffer = audio.createBuffer(1, bufferSize, audio.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
+  }
+  const noise = audio.createBufferSource();
+  noise.buffer = buffer;
+  const filter = audio.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 600;
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(volume, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
+  noise.connect(filter); filter.connect(gain); gain.connect(audio.destination);
+  noise.start();
+}
+function playBomb() {
+  ensureAudio();
+  const o = audio.createOscillator();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(150, audio.currentTime);
+  o.frequency.exponentialRampToValueAtTime(25, audio.currentTime + 0.45);
+  const g = audio.createGain();
+  g.gain.setValueAtTime(0.35, audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.55);
+  o.connect(g); g.connect(audio.destination);
+  o.start(); o.stop(audio.currentTime + 0.55);
+  playNoise(0.45, 0.28);
+}
+function playLineClear(lines = 1) {
+  ensureAudio();
+  for (let i = 0; i < Math.min(lines, 4); i++) {
+    setTimeout(() => {
+      const o = audio.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = 380 + i * 140;
+      const g = audio.createGain();
+      g.gain.setValueAtTime(0.22, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.28);
+      o.connect(g); g.connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + 0.32);
+    }, i * 70);
+  }
+}
+function playZap() {
+  ensureAudio();
+  const o = audio.createOscillator();
+  o.type = "square";
+  o.frequency.setValueAtTime(900, audio.currentTime);
+  o.frequency.exponentialRampToValueAtTime(180, audio.currentTime + 0.18);
+  const g = audio.createGain();
+  g.gain.setValueAtTime(0.18, audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.22);
+  o.connect(g); g.connect(audio.destination);
+  o.start(); o.stop(audio.currentTime + 0.22);
+}
+function playSparkle() {
+  ensureAudio();
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      const o = audio.createOscillator();
+      o.type = "sine";
+      o.frequency.value = 520 + Math.random() * 900;
+      const g = audio.createGain();
+      g.gain.setValueAtTime(0.14, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.16);
+      o.connect(g); g.connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + 0.16);
+    }, i * 35);
+  }
 }
 function empty() { return Array.from({length:N}, () => Array(N).fill(0)); }
 function clone(s) { return s.map(r => r.slice()); }
@@ -113,12 +194,22 @@ function anyFit(piece) {
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(piece, r, c)) return true;
   return false;
 }
-function boom(r, c, color) {
+function boom(r, c, color, intensity = 1) {
   const cell = boardEl.children[r * N + c];
   if (!cell) return;
   const rect = cell.getBoundingClientRect();
   const stage = document.querySelector(".stage").getBoundingClientRect();
-  parts.push({ x: rect.left - stage.left + rect.width / 2, y: rect.top - stage.top + rect.height / 2, color, life: 18, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 4 - 1 });
+  const count = Math.floor(3 + intensity * 4);
+  for (let i = 0; i < count; i++) {
+    parts.push({
+      x: rect.left - stage.left + rect.width / 2,
+      y: rect.top - stage.top + rect.height / 2,
+      color,
+      life: 22 + Math.random() * 10,
+      vx: (Math.random() - 0.5) * (8 + intensity * 4),
+      vy: -Math.random() * (5 + intensity * 2) - 1
+    });
+  }
 }
 function popText(text) {
   const el = document.createElement("div");
@@ -130,10 +221,10 @@ function popText(text) {
   setTimeout(() => el.remove(), 700);
   document.getElementById("yell").textContent = text;
 }
-function clearAt(r, c, bag) {
+function clearAt(r, c, bag, intensity = 1) {
   if (r < 0 || c < 0 || r >= N || c >= N || !board[r][c] || bag.has(r + "," + c)) return;
   bag.add(r + "," + c);
-  boom(r, c, board[r][c].color);
+  boom(r, c, board[r][c].color, intensity);
   board[r][c] = 0;
 }
 function place(piece, r, c) {
@@ -145,15 +236,15 @@ function place(piece, r, c) {
   const bag = new Set();
   dropped.forEach(([rr, cc]) => {
     const stone = { power: piece.power, color: piece.color };
-    if (stone.power === "bomb") for (let y = rr - 1; y <= rr + 1; y++) for (let x = cc - 1; x <= cc + 1; x++) clearAt(y, x, bag);
-    if (stone.power === "bolt") { for (let i = 0; i < N; i++) { clearAt(rr, i, bag); clearAt(i, cc, bag); } }
-    if (stone.power === "burst") for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (board[y][x] && board[y][x].color === stone.color) clearAt(y, x, bag);
+    if (stone.power === "bomb") for (let y = rr - 1; y <= rr + 1; y++) for (let x = cc - 1; x <= cc + 1; x++) clearAt(y, x, bag, 2.2);
+    if (stone.power === "bolt") { for (let i = 0; i < N; i++) { clearAt(rr, i, bag, 1.6); clearAt(i, cc, bag, 1.6); } }
+    if (stone.power === "burst") for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (board[y][x] && board[y][x].color === stone.color) clearAt(y, x, bag, 1.4);
   });
   const rows = [], cols = [];
   for (let i = 0; i < N; i++) if (board[i].every(v => v)) rows.push(i);
   for (let i = 0; i < N; i++) if (board.every(row => row[i])) cols.push(i);
-  rows.forEach(i => { for (let x = 0; x < N; x++) clearAt(i, x, bag); });
-  cols.forEach(i => { for (let y = 0; y < N; y++) clearAt(y, i, bag); });
+  rows.forEach(i => { for (let x = 0; x < N; x++) clearAt(i, x, bag, 1.3); });
+  cols.forEach(i => { for (let y = 0; y < N; y++) clearAt(y, i, bag, 1.3); });
   if (rows.length && cols.length) for (let y = r - 1; y <= r + piece.cells.length; y++) for (let x = c - 1; x <= c + piece.cells[0].length; x++) clearAt(y, x, bag);
   const cleared = bag.size;
   if (cleared) {
@@ -170,8 +261,21 @@ function place(piece, r, c) {
     else if (lines === 2) skyShow("hurricane");
     else skyShow("meteor");
     document.body.classList.add("shake");
-    setTimeout(() => document.body.classList.remove("shake"), 280);
-    beep(piece.power ? 180 : 420, 0.12, piece.power ? "sawtooth" : "square");
+    setTimeout(() => document.body.classList.remove("shake"), 320 + lines * 40);
+    // Dynamic sounds
+    if (piece.power === "bomb") {
+      playBomb();
+      document.body.classList.add("flash-bomb");
+      setTimeout(() => document.body.classList.remove("flash-bomb"), 200);
+    } else if (piece.power === "bolt") {
+      playZap();
+    } else if (piece.power === "burst") {
+      playSparkle();
+    } else if (lines > 0) {
+      playLineClear(lines);
+    } else {
+      beep(480, 0.1, "sine");
+    }
     if (lines) {
       linesLeft -= lines;
       if (linesLeft <= 0) {
@@ -200,7 +304,7 @@ function draw() {
       const s = document.createElement("div");
       s.className = "stone";
       s.style.background = board[r][c].color;
-      s.textContent = board[r][c].power === "bomb" ? "💣" : board[r][c].power === "bolt" ? "⚡" : board[r][c].power === "burst" ? "✦" : "";
+      s.textContent = board[r][c].power === "bomb" ? "\ud83d\udca3" : board[r][c].power === "bolt" ? "\u26a1" : board[r][c].power === "burst" ? "\u2726" : "";
       d.appendChild(s);
     }
     d.dataset.r = r;
@@ -219,7 +323,7 @@ function draw() {
       const dot = document.createElement("div");
       dot.className = "dot";
       dot.style.background = v ? p.color : "transparent";
-      dot.textContent = v && p.power === "bomb" ? "💣" : v && p.power === "bolt" ? "⚡" : v && p.power === "burst" ? "✦" : "";
+      dot.textContent = v && p.power === "bomb" ? "\ud83d\udca3" : v && p.power === "bolt" ? "\u26a1" : v && p.power === "burst" ? "\u2726" : "";
       dot.style.fontSize = "9px";
       mini.appendChild(dot);
     }));
@@ -241,7 +345,7 @@ function ghostFor(p) {
     dot.style.width = "22px";
     dot.style.height = "22px";
     dot.style.background = v ? p.color : "transparent";
-    dot.textContent = v && p.power === "bomb" ? "💣" : v && p.power === "bolt" ? "⚡" : v && p.power === "burst" ? "✦" : "";
+    dot.textContent = v && p.power === "bomb" ? "\ud83d\udca3" : v && p.power === "bolt" ? "\u26a1" : v && p.power === "burst" ? "\u2726" : "";
     mini.appendChild(dot);
   }));
   return mini;
@@ -380,10 +484,10 @@ function armMusic() {
   parts = parts.filter(p => p.life > 0);
   parts.forEach(p => {
     p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
-    ctx.globalAlpha = p.life / 18;
+    ctx.globalAlpha = p.life / 22;
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 5, 0, 7);
+    ctx.arc(p.x, p.y, 5 + (22 - p.life) * 0.2, 0, 7);
     ctx.fill();
   });
   const sky = document.getElementById("sky");
@@ -412,7 +516,7 @@ function applyTheme() {
   const art = arts[(level - 1) % arts.length];
   mood = moods[(level - 1) % moods.length];
   document.getElementById("scene").style.backgroundImage = "url(" + art + ")";
-  document.getElementById("themeName").textContent = "Level " + level + " · " + worlds[level - 1];
+  document.getElementById("themeName").textContent = "Level " + level + " \u00b7 " + worlds[level - 1];
   linesLeft = 2 + Math.floor((level - 1) / 10);
   document.getElementById("yell").textContent = "Clear " + linesLeft + " lines. " + mood + " sky. Tap once for music.";
   try { fillSky(); } catch (err) { document.getElementById("yell").textContent = "Sky skipped. Board is ready."; }
