@@ -355,7 +355,7 @@ async function askGemini(dataUrl){
   const key = getKey();
   if(!key) return null;
   const b64 = (dataUrl.split(",")[1] || "").slice(0, 500000);
-  const prompt = `You are a resale pricing assistant. Identify the item in the photo for Facebook Marketplace / eBay sold pricing in the US.\nReturn ONLY valid JSON with this exact shape:\n{"name":"short clear title","brand":"brand or unknown","condition":"Used / Good / Fair","low":15,"high":45,"floor":10,"notes":["short note","another note"],"search":"exact search query for sold listings","listingTitle":"ready listing title","listingBody":"short description"}\nBe realistic. Do not invent brand or model if not clearly visible. Prefer common thrift/resale ranges.`;
+  const prompt = `You are a precise resale and product identification assistant. Identify the exact item in the photo.\nReturn ONLY valid JSON with this shape:\n{"name":"specific name including brand and model if visible","brand":"exact brand or unknown","model":"model if visible or unknown","condition":"Used / Good / Fair","low":15,"high":35,"floor":10,"purpose":"what this specific item is for in 1-2 sentences","history":"brief background or era if relevant, especially for antiques or known products","howto":"how to use, test, or care for this item","notes":["value driver 1","value driver 2"],"search":"exact search for sold listings","listingTitle":"ready title","listingBody":"short description"}\nBe specific. If you can read a brand or model, include it. For antiques note style or period if visible. Do not invent details. Keep price ranges realistic and relatively tight for US resale.`;
   const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"];
   for(const model of models){
     try {
@@ -421,6 +421,9 @@ async function run(file){
           low: Number(ai.low) || guess.low,
           high: Number(ai.high) || guess.high,
           floor: Number(ai.floor) || guess.floor,
+          purpose: ai.purpose || guess.purpose || "",
+          history: ai.history || guess.history || "",
+          howto: ai.howto || guess.howto || "",
           notes: Array.isArray(ai.notes) ? ai.notes : [String(ai.notes || "Gemini estimate")],
           search: ai.search || ai.name,
           conf: "Gemini",
