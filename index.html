@@ -153,6 +153,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const KEY = "sw_gemini_key_v2";
+const BACKEND = ""; // set to your deployed function URL for key-free accurate results
 const HIST = "sw_hist_v8";
 
 const CATS = [
@@ -352,6 +353,20 @@ function compress(file){
 }
 
 async function askGemini(dataUrl){
+  // Prefer backend so users never need a key
+  if(BACKEND){
+    try {
+      const res = await fetch(BACKEND, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ image: dataUrl })
+      });
+      if(res.ok){
+        const data = await res.json();
+        if(data && data.name) return data;
+      }
+    } catch(e) { /* fall through */ }
+  }
   const key = getKey();
   if(!key) return null;
   const b64 = (dataUrl.split(",")[1] || "").slice(0, 500000);
@@ -410,8 +425,8 @@ async function run(file){
     paint(guess);
     $("status").textContent = "Instant estimate ready. Tap a category below if the name is wrong.";
 
-    if(getKey()){
-      $("status").textContent = "Asking Gemini for a better ID…";
+    if(BACKEND || getKey()){
+      $("status").textContent = "Getting specific ID and price…";
       const ai = await askGemini(dataUrl);
       if(ai && ai.name){
         const item = Object.assign({id: guess.id, image: dataUrl}, {
