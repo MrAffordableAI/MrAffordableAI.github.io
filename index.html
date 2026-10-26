@@ -108,10 +108,11 @@
       <ul id="notes" style="color:var(--muted);margin:8px 0 0;padding-left:18px"></ul>
     </div>
     <div class="card links">
-      <strong>Verify live sold prices</strong>
-      <a id="ebay" target="_blank" rel="noopener">eBay Sold</a>
+      <strong>Compare to real sold prices</strong>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0 8px">Open these to see what similar items actually sold for. Use them to confirm or adjust the range above.</p>
+      <a id="ebay" target="_blank" rel="noopener">eBay Sold listings</a>
       <a id="gsearch" target="_blank" rel="noopener">Google sold search</a>
-      <a id="fb" target="_blank" rel="noopener">Marketplace</a>
+      <a id="fb" target="_blank" rel="noopener">Facebook Marketplace</a>
     </div>
     <div class="row">
       <button class="btn no" data-go="home">Scan another</button>
@@ -150,14 +151,17 @@ const KEY = "sw_gemini_key_v2";
 const HIST = "sw_hist_v8";
 
 const CATS = [
-  {id:"mouse", name:"Computer mouse", brand:"Logitech / generic", low:6, high:18, floor:5, notes:["Wired office mice usually $5–12 used.","Wireless needs the USB receiver."], q:"Logitech mouse used"},
-  {id:"headphones", name:"Headphones / earbuds", brand:"Check logo", low:8, high:35, floor:6, notes:["Budget brands $8–25 used.","Padding, battery, and case matter."], q:"used headphones"},
-  {id:"tool", name:"Power or hand tool", brand:"Read the brand", low:15, high:70, floor:10, notes:["Brand + battery pack set the price.","Working condition is critical."], q:"used power tool"},
-  {id:"phone", name:"Smartphone", brand:"Model + storage", low:40, high:280, floor:20, notes:["iCloud / FRP lock kills value.","Cracks and battery health matter."], q:"used smartphone"},
-  {id:"shoes", name:"Shoes / sneakers", brand:"Brand + size", low:12, high:90, floor:8, notes:["Sole wear and original box matter.","Popular models sell higher."], q:"used sneakers"},
-  {id:"furniture", name:"Furniture", brand:"Local pickup", low:25, high:200, floor:15, notes:["Condition and style drive local demand.","Shipping is expensive."], q:"used furniture"},
-  {id:"jewelry", name:"Jewelry / watch", brand:"Hallmarks", low:10, high:150, floor:5, notes:["Real gold/silver vs costume.","Working movement for watches."], q:"used jewelry"},
-  {id:"item", name:"Household item", brand:"Unknown", low:8, high:40, floor:5, notes:["Tap a better category or type the name."], q:"used item"}
+  {id:"mouse", name:"Computer mouse", brand:"Logitech / generic", low:5, high:15, floor:4, notes:["Wired office mice usually $4–12 used.","Wireless needs the USB receiver."], q:"Logitech mouse used"},
+  {id:"headphones", name:"Headphones / earbuds", brand:"Check logo", low:10, high:45, floor:8, notes:["Budget brands $8–25 used.","Mid-tier (Sony, Bose, etc.) higher if working."], q:"used headphones"},
+  {id:"tool", name:"Power or hand tool", brand:"Read the brand", low:20, high:80, floor:12, notes:["Brand + battery pack set the price.","Working condition is critical."], q:"used power tool"},
+  {id:"phone", name:"Smartphone", brand:"Model + storage", low:50, high:300, floor:25, notes:["iCloud / FRP lock kills value.","Cracks and battery health matter."], q:"used smartphone"},
+  {id:"shoes", name:"Shoes / sneakers", brand:"Brand + size", low:15, high:100, floor:10, notes:["Sole wear and original box matter.","Popular models sell higher."], q:"used sneakers"},
+  {id:"furniture", name:"Furniture", brand:"Local pickup", low:30, high:180, floor:15, notes:["Condition and style drive local demand.","Shipping is expensive."], q:"used furniture"},
+  {id:"jewelry", name:"Jewelry / watch", brand:"Hallmarks", low:8, high:120, floor:5, notes:["Real gold/silver vs costume.","Working movement for watches."], q:"used jewelry"},
+  {id:"bottle", name:"Water bottle / tumbler", brand:"Brand on base", low:6, high:25, floor:4, notes:["Insulated brands (Yeti, Hydro, etc.) higher.","Dents and lid condition matter."], q:"used insulated tumbler"},
+  {id:"clothing", name:"Clothing / jacket", brand:"Brand + size", low:8, high:40, floor:5, notes:["Brand and condition drive price.","Fast fashion is low."], q:"used clothing"},
+  {id:"electronics", name:"Small electronics", brand:"Model number", low:12, high:60, floor:8, notes:["Working vs parts-only big difference.","Include charger if possible."], q:"used electronics"},
+  {id:"item", name:"Household item", brand:"Unknown", low:8, high:35, floor:5, notes:["Tap a better category or type the name for a tighter range."], q:"used item"}
 ];
 
 const state = { current:null, history:JSON.parse(localStorage.getItem(HIST)||"[]") };
