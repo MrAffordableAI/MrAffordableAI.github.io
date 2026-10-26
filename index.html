@@ -103,9 +103,9 @@
     <div class="card links">
       <strong>Verify with real sold prices</strong>
       <p style="color:var(--muted);font-size:13px;margin:6px 0 8px">The range above is a starting point. Open these to see actual recent sales and set your price from real comps.</p>
-      <a id="ebay" target="_blank" rel="noopener">eBay Sold — see what it actually sold for</a>
+      <a id="ebay" target="_blank" rel="noopener">eBay sold results (via Google)</a>
       <a id="gsearch" target="_blank" rel="noopener">Google sold search</a>
-      <a id="fb" target="_blank" rel="noopener">Facebook Marketplace local</a>
+      <a id="fb" target="_blank" rel="noopener">Marketplace results (via Google)</a>
     </div>
     <div class="row">
       <button class="btn no" data-go="home">Scan another</button>
@@ -208,9 +208,9 @@ function paint(item){
   $("ltitle").value = item.listingTitle || item.name || "";
   $("lbody").value = item.listingBody || "";
   const term = item.search || item.name || "item";
-  $("ebay").href = "https://www.ebay.com/sch/i.html?_nkw=" + q(term) + "&LH_Sold=1&LH_Complete=1";
+  $("ebay").href = "https://www.google.com/search?q=" + q("ebay sold " + term);
   $("gsearch").href = "https://www.google.com/search?q=" + q(term + " sold price");
-  $("fb").href = "https://www.facebook.com/marketplace/search/?query=" + q(term);
+  $("fb").href = "https://www.google.com/search?q=" + q("facebook marketplace " + term);
   $("chips").innerHTML = CATS.filter(c => c.id !== "item").map(c =>
     '<button type="button" data-id="' + c.id + '">' + c.name + '</button>'
   ).join("");
