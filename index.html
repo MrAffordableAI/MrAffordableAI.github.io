@@ -58,20 +58,13 @@
   <section id="home" class="screen on">
     <div class="hero">
       <h2>Photograph it.<br>Price it. List it.</h2>
-      <p>You always get a price the moment the photo loads. Tap a category or type the name to refine. Optional Gemini for sharper ID.</p>
-    </div>
-    <div class="card" style="margin:8px 0 14px">
-      <strong>Gemini API key (optional — for auto ID)</strong>
-      <p style="color:var(--muted);font-size:13px;margin:6px 0">Paste a free key from aistudio.google.com/apikey. Stored only on this phone.</p>
-      <input id="apiKeyHome" type="text" placeholder="Paste key (AIza...) here"/>
-      <button class="keybtn" id="saveKeyHome" style="margin-top:8px">Save key</button>
-      <p id="keyMsgHome" class="status" style="margin:8px 0 0"></p>
+      <p>Take a photo. Get a price range immediately. Tap a category or type the name to refine. Check live sold prices to confirm.</p>
     </div>
     <button class="take" id="takeBtn">TAKE PHOTO</button>
     <button class="ghost" id="upBtn">Upload photos (one or more)</button>
     <input id="cam" class="hidden" type="file" accept="image/*" capture="environment" multiple/>
     <input id="lib" class="hidden" type="file" accept="image/*" multiple/>
-    <p class="disclaimer">Works without a key. Paste one above if you want the AI to name the item automatically.</p>
+    <p class="disclaimer">Works without any key. Optional Gemini key is under the AI key pill if you want automatic naming.</p>
   </section>
 
   <section id="settings" class="screen">
@@ -346,7 +339,7 @@ async function run(file){
     const guess = Object.assign({id: Date.now(), image: dataUrl}, fromCat(CATS.find(c => c.id === "item")));
     persist(guess);
     paint(guess);
-    $("status").textContent = "Instant estimate shown. Tap a category or type the name if this is wrong.";
+    $("status").textContent = "Instant estimate ready. Tap a category below if the name is wrong.";
 
     if(getKey()){
       $("status").textContent = "Asking Gemini for a better ID…";
@@ -385,13 +378,6 @@ async function run(file){
 
 $("takeBtn").onclick = () => $("cam").click();
 $("upBtn").onclick = () => $("lib").click();
-$("saveKeyHome").onclick = () => {
-  const k = $("apiKeyHome").value.trim();
-  if(k) localStorage.setItem(KEY, k);
-  else localStorage.removeItem(KEY);
-  $("keyMsgHome").textContent = k ? "Key saved. Next photo will try Gemini." : "Key cleared.";
-  if($("apiKey")) $("apiKey").value = k;
-};
 $("cam").onchange = e => {
   const files = Array.from(e.target.files || []);
   if(files.length) runMulti(files);
@@ -429,8 +415,6 @@ $("shareBtn").onclick = async () => {
   } catch(e) {}
 };
 document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => show(b.dataset.go)));
-if($("apiKeyHome")) $("apiKeyHome").value = getKey();
-if(getKey()) $("keyMsgHome").textContent = "Key already saved.";
 </script>
 </body>
 </html>
