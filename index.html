@@ -11,7 +11,7 @@
     :root { --bg:#0f1410; --bg2:#171e18; --card:#1d261f; --ink:#f4efe4; --muted:#b7c0b4; --gold:#d4b36a; --gold2:#f0d59a; --line:rgba(244,239,228,.12); --danger:#e07a6a; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--ink); font-family:Outfit,system-ui,sans-serif; }
-    .app { max-width:480px; margin:0 auto; padding:16px 16px 140px; }
+    .app { max-width:480px; margin:0 auto; padding:16px 16px 180px; }
     header { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; }
     .brand { display:flex; gap:10px; align-items:center; }
     .logo { width:36px; height:36px; border-radius:10px; background:linear-gradient(145deg,#f0d59a,#d4b36a); color:#1a1408; display:grid; place-items:center; font-weight:800; }
@@ -62,10 +62,16 @@
     </div>
     <button class="take" id="takeBtn">TAKE PHOTO</button>
     <button class="ghost" id="upBtn">Upload photos (one or more)</button>
-    <button class="keybtn" id="keyBtn">Add free Gemini key (optional)</button>
+    <div class="card" style="margin-top:14px">
+      <strong>Gemini API key (optional — for auto ID)</strong>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0">Paste a free key from aistudio.google.com/apikey. Stored only on this phone.</p>
+      <input id="apiKeyHome" type="text" placeholder="Paste key (AIza...) here"/>
+      <button class="keybtn" id="saveKeyHome" style="margin-top:8px">Save key</button>
+      <p id="keyMsgHome" class="status" style="margin:8px 0 0"></p>
+    </div>
     <input id="cam" class="hidden" type="file" accept="image/*" capture="environment" multiple/>
     <input id="lib" class="hidden" type="file" accept="image/*" multiple/>
-    <p class="disclaimer">Works without any key. The button above opens key settings if you want automatic identification.</p>
+    <p class="disclaimer">Works without a key. Paste one above if you want the AI to name the item automatically.</p>
   </section>
 
   <section id="settings" class="screen">
@@ -375,7 +381,13 @@ async function run(file){
 
 $("takeBtn").onclick = () => $("cam").click();
 $("upBtn").onclick = () => $("lib").click();
-$("keyBtn").onclick = () => show("settings");
+$("saveKeyHome").onclick = () => {
+  const k = $("apiKeyHome").value.trim();
+  if(k) localStorage.setItem(KEY, k);
+  else localStorage.removeItem(KEY);
+  $("keyMsgHome").textContent = k ? "Key saved. Next photo will try Gemini." : "Key cleared.";
+  if($("apiKey")) $("apiKey").value = k;
+};
 $("cam").onchange = e => {
   const files = Array.from(e.target.files || []);
   if(files.length) runMulti(files);
@@ -413,6 +425,8 @@ $("shareBtn").onclick = async () => {
   } catch(e) {}
 };
 document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => show(b.dataset.go)));
+if($("apiKeyHome")) $("apiKeyHome").value = getKey();
+if(getKey()) $("keyMsgHome").textContent = "Key already saved.";
 </script>
 </body>
 </html>
