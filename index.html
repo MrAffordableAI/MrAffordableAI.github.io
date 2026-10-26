@@ -52,7 +52,6 @@
 <div class="app">
   <header>
     <div class="brand"><div class="logo">SW</div><div><h1>SnapWorth</h1><p class="sub">What is this worth?</p></div></div>
-    <div class="pill" id="keyPill">AI key</div>
   </header>
 
   <section id="home" class="screen on">
@@ -64,7 +63,8 @@
     <button class="ghost" id="upBtn">Upload photos (one or more)</button>
     <input id="cam" class="hidden" type="file" accept="image/*" capture="environment" multiple/>
     <input id="lib" class="hidden" type="file" accept="image/*" multiple/>
-    <p class="disclaimer">Works without any key. Optional Gemini key is under the AI key pill if you want automatic naming.</p>
+    <button class="keybtn" id="keyPill" style="margin-top:20px">AI key (optional)</button>
+    <p class="disclaimer">Works without any key. Tap the button above only if you want automatic naming.</p>
   </section>
 
   <section id="settings" class="screen">
