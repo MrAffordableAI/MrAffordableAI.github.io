@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>SnapWorth — What is this worth?</title>
-  <meta name="description" content="Photograph an item. Get identification, resale range, and listing. Verify with live sold prices." />
+  <meta name="description" content="Photograph an item. Get an instant resale estimate, refine it, and list it. Always verify with live sold prices." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --bg:#0f1410; --bg2:#171e18; --card:#1d261f; --ink:#f4efe4; --muted:#b7c0b4; --gold:#d4b36a; --gold2:#f0d59a; --line:rgba(244,239,228,.12); }
+    :root { --bg:#0f1410; --bg2:#171e18; --card:#1d261f; --ink:#f4efe4; --muted:#b7c0b4; --gold:#d4b36a; --gold2:#f0d59a; --line:rgba(244,239,228,.12); --danger:#e07a6a; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--ink); font-family:Outfit,system-ui,sans-serif; }
-    .app { max-width:480px; margin:0 auto; padding:16px 16px 96px; }
+    .app { max-width:480px; margin:0 auto; padding:16px 16px 100px; }
     header { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; }
     .brand { display:flex; gap:10px; align-items:center; }
     .logo { width:36px; height:36px; border-radius:10px; background:linear-gradient(145deg,#f0d59a,#d4b36a); color:#1a1408; display:grid; place-items:center; font-weight:800; }
@@ -23,7 +23,7 @@
     .take { width:100%; border:0; background:linear-gradient(180deg,#f3d48e,#c99a45); color:#1a1408; border-radius:20px; padding:20px; font-weight:800; font-size:18px; cursor:pointer; }
     .ghost { width:100%; margin-top:10px; border:1px dashed var(--line); background:var(--bg2); color:var(--ink); border-radius:16px; padding:14px; cursor:pointer; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin:10px 0; }
-    .thumb { width:100%; height:200px; object-fit:cover; border-radius:14px; background:#111; }
+    .thumb { width:100%; height:200px; object-fit:cover; border-radius:14px; background:#111; display:block; }
     .title { font-family:"Instrument Serif",serif; font-size:24px; margin:10px 0 4px; }
     .price { font-size:28px; color:var(--gold2); font-weight:700; }
     .meta { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:10px 0; }
@@ -37,8 +37,8 @@
     .chips button { border:1px solid var(--line); background:var(--bg2); color:var(--ink); border-radius:999px; padding:7px 11px; font-size:13px; cursor:pointer; }
     .chips button.on { background:rgba(212,179,106,.2); color:var(--gold2); }
     .links a { display:block; color:var(--gold2); padding:8px 0; text-decoration:none; border-bottom:1px solid var(--line); font-size:14px; }
-    .status { color:var(--gold2); font-size:14px; margin:8px 0; }
-    .err { color:#e07a6a; font-size:13px; white-space:pre-wrap; }
+    .status { color:var(--gold2); font-size:14px; margin:8px 0; min-height:1.2em; }
+    .err { color:var(--danger); font-size:13px; white-space:pre-wrap; }
     .nav { position:fixed; left:50%; bottom:12px; transform:translateX(-50%); width:min(480px,calc(100% - 24px)); display:grid; grid-template-columns:repeat(3,1fr); background:var(--bg2); border:1px solid var(--line); border-radius:16px; padding:6px; }
     .nav button { border:0; background:transparent; color:var(--muted); padding:10px; border-radius:12px; cursor:pointer; }
     .nav button.on { background:rgba(212,179,106,.16); color:var(--gold2); }
@@ -57,18 +57,18 @@
   <section id="home" class="screen on">
     <div class="hero">
       <h2>Photograph it.<br>Price it. List it.</h2>
-      <p>Instant estimate always. Optional Gemini for better ID. Always verify with live sold links.</p>
+      <p>You always get a price the moment the photo loads. Tap a category or type the name to refine. Optional Gemini for sharper ID.</p>
     </div>
     <button class="take" id="takeBtn">TAKE PHOTO</button>
     <button class="ghost" id="upBtn">Upload from camera roll</button>
     <input id="cam" class="hidden" type="file" accept="image/*" capture="environment"/>
     <input id="lib" class="hidden" type="file" accept="image/*"/>
-    <p class="disclaimer" id="homeNote">Works without a key. Add a free Gemini key (tap AI key) for sharper identification.</p>
+    <p class="disclaimer">Works without any key. Add a free Gemini key (tap AI key) for better automatic identification.</p>
   </section>
 
   <section id="settings" class="screen">
     <div class="card">
-      <strong>Gemini API key (optional, improves accuracy)</strong>
+      <strong>Gemini API key (optional)</strong>
       <p style="color:var(--muted);font-size:13px">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--gold2)">aistudio.google.com/apikey</a></p>
       <input id="apiKey" type="text" placeholder="Paste key (AIza...)"/>
       <button class="take" id="saveKey" style="margin-top:10px">Save key</button>
@@ -78,21 +78,21 @@
   </section>
 
   <section id="result" class="screen">
-    <img class="thumb" id="img" alt=""/>
-    <p class="status" id="status">Analyzing…</p>
+    <img class="thumb" id="img" alt="Item photo"/>
+    <p class="status" id="status">Instant estimate ready</p>
     <p class="err" id="err"></p>
     <h2 class="title" id="pname"></h2>
     <div class="price" id="price"></div>
     <div class="meta">
       <div><span>Brand / model</span><strong id="brand">—</strong></div>
       <div><span>Condition</span><strong id="cond">—</strong></div>
-      <div><span>Confidence</span><strong id="conf">—</strong></div>
+      <div><span>Source</span><strong id="conf">—</strong></div>
     </div>
     <p id="advice" style="color:var(--gold2);font-size:14px"></p>
     <div class="card">
-      <strong>Wrong? Tap the real category or type the name</strong>
+      <strong>Wrong? Tap a category or type the real name</strong>
       <div class="chips" id="chips"></div>
-      <input id="typed" placeholder="e.g. Logitech mouse, Craftsman drill, Nike shoes"/>
+      <input id="typed" placeholder="e.g. Logitech mouse, Craftsman drill, Nike Air Force 1"/>
       <button class="ghost" id="reprice">Update from name</button>
     </div>
     <div class="card">
@@ -109,7 +109,7 @@
       <button class="btn no" data-go="home">Scan another</button>
       <button class="btn go" data-go="sell">Sell It</button>
     </div>
-    <p class="disclaimer">AI estimate only. Always check the live sold links. Not an appraisal.</p>
+    <p class="disclaimer">Estimate only. Always check the live sold links before listing. Not a formal appraisal.</p>
   </section>
 
   <section id="sell" class="screen">
@@ -139,37 +139,50 @@
 <script>
 const $ = id => document.getElementById(id);
 const KEY = "sw_gemini_key_v2";
-const HIST = "sw_hist_v7";
+const HIST = "sw_hist_v8";
 
 const CATS = [
-  {id:"mouse", name:"Computer mouse", brand:"Logitech / generic", low:6, high:15, floor:5, notes:["Wired office mice usually $5–12 used.","Wireless needs the receiver."], q:"Logitech mouse used"},
-  {id:"headphones", name:"Headphones / earbuds", brand:"Check logo", low:8, high:28, floor:6, notes:["Budget brands $8–20 used.","Padding and battery condition matter."], q:"used headphones"},
-  {id:"tool", name:"Power or hand tool", brand:"Read the brand stamp", low:15, high:60, floor:10, notes:["Brand + battery pack set the price.","Working condition is critical."], q:"used power tool"},
-  {id:"phone", name:"Smartphone", brand:"Model + storage", low:40, high:250, floor:20, notes:["iCloud / FRP lock kills value.","Cracks and battery health matter."], q:"used smartphone"},
-  {id:"shoes", name:"Shoes / sneakers", brand:"Brand + size", low:12, high:80, floor:8, notes:["Condition of soles and box matter.","Popular models sell higher."], q:"used sneakers"},
-  {id:"furniture", name:"Furniture", brand:"Local pickup", low:25, high:180, floor:15, notes:["Condition and style drive local demand.","Shipping is expensive."], q:"used furniture"},
-  {id:"jewelry", name:"Jewelry / watch", brand:"Hallmarks", low:10, high:120, floor:5, notes:["Real gold/silver vs costume.","Working movement for watches."], q:"used jewelry"},
-  {id:"item", name:"Household item", brand:"Unknown", low:8, high:35, floor:5, notes:["Tap a better category if this is wrong."], q:"used item"}
+  {id:"mouse", name:"Computer mouse", brand:"Logitech / generic", low:6, high:18, floor:5, notes:["Wired office mice usually $5–12 used.","Wireless needs the USB receiver."], q:"Logitech mouse used"},
+  {id:"headphones", name:"Headphones / earbuds", brand:"Check logo", low:8, high:35, floor:6, notes:["Budget brands $8–25 used.","Padding, battery, and case matter."], q:"used headphones"},
+  {id:"tool", name:"Power or hand tool", brand:"Read the brand", low:15, high:70, floor:10, notes:["Brand + battery pack set the price.","Working condition is critical."], q:"used power tool"},
+  {id:"phone", name:"Smartphone", brand:"Model + storage", low:40, high:280, floor:20, notes:["iCloud / FRP lock kills value.","Cracks and battery health matter."], q:"used smartphone"},
+  {id:"shoes", name:"Shoes / sneakers", brand:"Brand + size", low:12, high:90, floor:8, notes:["Sole wear and original box matter.","Popular models sell higher."], q:"used sneakers"},
+  {id:"furniture", name:"Furniture", brand:"Local pickup", low:25, high:200, floor:15, notes:["Condition and style drive local demand.","Shipping is expensive."], q:"used furniture"},
+  {id:"jewelry", name:"Jewelry / watch", brand:"Hallmarks", low:10, high:150, floor:5, notes:["Real gold/silver vs costume.","Working movement for watches."], q:"used jewelry"},
+  {id:"item", name:"Household item", brand:"Unknown", low:8, high:40, floor:5, notes:["Tap a better category or type the name."], q:"used item"}
 ];
 
 const state = { current:null, history:JSON.parse(localStorage.getItem(HIST)||"[]") };
 
-function saveHist(){ try{ localStorage.setItem(HIST, JSON.stringify(state.history.slice(0,20))); }catch(e){} }
+function saveHist(){ try{ localStorage.setItem(HIST, JSON.stringify(state.history.slice(0,30))); }catch(e){} }
 function getKey(){ return (localStorage.getItem(KEY)||"").trim(); }
+
 function show(id){
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id===id));
-  document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("on", b.dataset.go===id || (id==="result"&&b.dataset.go==="home") || (id==="settings"&&b.dataset.go==="home")));
+  document.querySelectorAll(".nav button").forEach(b => {
+    const go = b.dataset.go;
+    b.classList.toggle("on", go===id || (id==="result" && go==="home") || (id==="settings" && go==="home"));
+  });
   if(id==="history") renderHist();
-  if(id==="settings"){ $("apiKey").value=getKey(); $("keyMsg").textContent=getKey()?"Key saved.":"No key yet — instant estimates still work."; }
+  if(id==="settings"){
+    $("apiKey").value = getKey();
+    $("keyMsg").textContent = getKey() ? "Key saved. Next photo will try Gemini." : "No key yet — instant estimates still work.";
+  }
 }
+
 function q(s){ return encodeURIComponent(s||""); }
 
 function fromCat(cat, extraName){
-  const name = extraName || cat.name;
+  const name = (extraName || cat.name).trim();
   return {
-    name, brand:cat.brand, condition:"Used",
-    low:cat.low, high:cat.high, floor:cat.floor,
-    notes:cat.notes.slice(), search:extraName||cat.q,
+    name,
+    brand: cat.brand,
+    condition: "Used",
+    low: cat.low,
+    high: cat.high,
+    floor: cat.floor,
+    notes: cat.notes.slice(),
+    search: extraName || cat.q,
     conf: extraName ? "typed" : "instant",
     listingTitle: name + " — used",
     listingBody: name + "\nCondition: used as shown.\nAsking $" + cat.low + "–$" + cat.high + ".\nLocal pickup preferred.\nEstimates are not appraisals."
@@ -177,42 +190,62 @@ function fromCat(cat, extraName){
 }
 
 function paint(item){
+  if(!item) return;
   state.current = item;
   $("img").src = item.image || "";
-  $("pname").textContent = item.name;
-  $("price").textContent = "$" + item.low + "–$" + item.high;
+  $("pname").textContent = item.name || "Item";
+  $("price").textContent = "$" + (item.low||0) + "–$" + (item.high||0);
   $("brand").textContent = item.brand || "—";
   $("cond").textContent = item.condition || "Used";
   $("conf").textContent = item.conf || "—";
-  $("advice").textContent = "Do not list under $" + (item.floor||item.low) + " without checking sold comps.";
-  $("notes").innerHTML = (item.notes||[]).map(n=>"<li>"+n+"</li>").join("");
-  $("ltitle").value = item.listingTitle || item.name;
+  $("advice").textContent = "Do not list under $" + (item.floor||item.low||5) + " without checking sold comps.";
+  $("notes").innerHTML = (item.notes||[]).map(n => "<li>" + n + "</li>").join("");
+  $("ltitle").value = item.listingTitle || item.name || "";
   $("lbody").value = item.listingBody || "";
-  const term = item.search || item.name;
-  $("ebay").href = "https://www.ebay.com/sch/i.html?_nkw="+q(term)+"&LH_Sold=1&LH_Complete=1";
-  $("gsearch").href = "https://www.google.com/search?q="+q(term+" sold price");
-  $("fb").href = "https://www.facebook.com/marketplace/search/?query="+q(term);
-  $("chips").innerHTML = CATS.filter(c=>c.id!=="item").map(c=>'<button type="button" data-id="'+c.id+'">'+c.name+'</button>').join("");
+  const term = item.search || item.name || "item";
+  $("ebay").href = "https://www.ebay.com/sch/i.html?_nkw=" + q(term) + "&LH_Sold=1&LH_Complete=1";
+  $("gsearch").href = "https://www.google.com/search?q=" + q(term + " sold price");
+  $("fb").href = "https://www.facebook.com/marketplace/search/?query=" + q(term);
+  $("chips").innerHTML = CATS.filter(c => c.id !== "item").map(c =>
+    '<button type="button" data-id="' + c.id + '">' + c.name + '</button>'
+  ).join("");
   $("chips").querySelectorAll("button").forEach(b => {
     b.onclick = () => {
-      const cat = CATS.find(c=>c.id===b.dataset.id);
-      const next = Object.assign({id:item.id, image:item.image}, fromCat(cat));
-      persist(next); paint(next);
+      const cat = CATS.find(c => c.id === b.dataset.id);
+      if(!cat) return;
+      const next = Object.assign({id: item.id, image: item.image}, fromCat(cat));
+      persist(next);
+      paint(next);
       $("status").textContent = "Updated from category.";
+      $("err").textContent = "";
     };
   });
 }
 
 function persist(item){
-  const i = state.history.findIndex(h=>h.id===item.id);
-  if(i>=0) state.history[i]=item; else state.history.unshift(item);
+  if(!item || !item.id) return;
+  const i = state.history.findIndex(h => h.id === item.id);
+  if(i >= 0) state.history[i] = item;
+  else state.history.unshift(item);
   saveHist();
 }
 
 function renderHist(){
-  if(!state.history.length){ $("hist").innerHTML='<p style="color:var(--muted)">No scans yet.</p>'; return; }
-  $("hist").innerHTML = state.history.map((h,i)=>'<div class="card" data-i="'+i+'" style="display:flex;gap:10px;align-items:center;cursor:pointer"><img src="'+(h.image||"")+'" style="width:56px;height:56px;object-fit:cover;border-radius:8px"><div><strong>'+h.name+'</strong><div style="color:var(--muted);font-size:13px">$'+h.low+'–$'+h.high+'</div></div></div>').join("");
-  $("hist").querySelectorAll("[data-i]").forEach(el => el.onclick = () => { paint(state.history[+el.dataset.i]); show("result"); });
+  if(!state.history.length){
+    $("hist").innerHTML = '<p style="color:var(--muted)">No scans yet.</p>';
+    return;
+  }
+  $("hist").innerHTML = state.history.map((h,i) =>
+    '<div class="card" data-i="' + i + '" style="display:flex;gap:10px;align-items:center;cursor:pointer">' +
+    '<img src="' + (h.image||"") + '" style="width:56px;height:56px;object-fit:cover;border-radius:8px" alt="">' +
+    '<div><strong>' + (h.name||"Item") + '</strong><div style="color:var(--muted);font-size:13px">$' + h.low + '–$' + h.high + '</div></div></div>'
+  ).join("");
+  $("hist").querySelectorAll("[data-i]").forEach(el => {
+    el.onclick = () => {
+      paint(state.history[+el.dataset.i]);
+      show("result");
+    };
+  });
 }
 
 function compress(file){
@@ -221,17 +254,25 @@ function compress(file){
     const img = new Image();
     img.onload = () => {
       try {
-        let w = img.naturalWidth, h = img.naturalHeight;
-        const s = Math.min(1, 800 / Math.max(w,h));
-        w = Math.max(1, Math.round(w*s)); h = Math.max(1, Math.round(h*s));
+        let w = img.naturalWidth || 800, h = img.naturalHeight || 600;
+        const scale = Math.min(1, 800 / Math.max(w, h));
+        w = Math.max(1, Math.round(w * scale));
+        h = Math.max(1, Math.round(h * scale));
         const c = document.createElement("canvas");
         c.width = w; c.height = h;
-        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(url);
-        resolve(c.toDataURL("image/jpeg", 0.65));
-      } catch(e){ URL.revokeObjectURL(url); reject(e); }
+        resolve(c.toDataURL("image/jpeg", 0.7));
+      } catch(e) {
+        URL.revokeObjectURL(url);
+        reject(e);
+      }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read photo")); };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read the photo. Try a different image."));
+    };
     img.src = url;
   });
 }
@@ -239,58 +280,65 @@ function compress(file){
 async function askGemini(dataUrl){
   const key = getKey();
   if(!key) return null;
-  const b64 = dataUrl.split(",")[1];
-  const prompt = `Identify this item for resale. Return ONLY valid JSON:
-{"name":"short title","brand":"brand or unknown","condition":"Good","low":15,"high":40,"floor":10,"notes":["note1","note2"],"search":"search query for sold listings","listingTitle":"title","listingBody":"description"}
-Be realistic for US Facebook Marketplace / eBay sold prices. Do not invent details not visible.`;
+  const b64 = (dataUrl.split(",")[1] || "").slice(0, 500000);
+  const prompt = `You are a resale pricing assistant. Identify the item in the photo for Facebook Marketplace / eBay sold pricing in the US.\nReturn ONLY valid JSON with this exact shape:\n{"name":"short clear title","brand":"brand or unknown","condition":"Used / Good / Fair","low":15,"high":45,"floor":10,"notes":["short note","another note"],"search":"exact search query for sold listings","listingTitle":"ready listing title","listingBody":"short description"}\nBe realistic. Do not invent brand or model if not clearly visible. Prefer common thrift/resale ranges.`;
   const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"];
   for(const model of models){
     try {
-      const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key), {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          contents:[{parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:prompt}]}],
-          generationConfig:{temperature:0.3}
-        })
-      });
+      const res = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(key),
+        {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            contents: [{parts: [
+              {inline_data: {mime_type: "image/jpeg", data: b64}},
+              {text: prompt}
+            ]}],
+            generationConfig: {temperature: 0.2}
+          })
+        }
+      );
       if(!res.ok) continue;
       const data = await res.json();
       let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      text = text.replace(/```json|```/g,"").trim();
+      text = text.replace(/```json|```/gi, "").trim();
       const start = text.indexOf("{");
       const end = text.lastIndexOf("}");
-      if(start<0||end<0) continue;
-      const parsed = JSON.parse(text.slice(start, end+1));
-      return parsed;
-    } catch(e){ continue; }
+      if(start < 0 || end < 0) continue;
+      const parsed = JSON.parse(text.slice(start, end + 1));
+      if(parsed && parsed.name) return parsed;
+    } catch(e) { /* try next model */ }
   }
   return null;
 }
 
 async function run(file){
+  if(!file) return;
   $("err").textContent = "";
   show("result");
   $("status").textContent = "Reading photo…";
+  $("pname").textContent = "…";
+  $("price").textContent = "—";
   try {
     const dataUrl = await compress(file);
-    const guess = Object.assign({id:Date.now(), image:dataUrl}, fromCat(CATS.find(c=>c.id==="item")));
+    const guess = Object.assign({id: Date.now(), image: dataUrl}, fromCat(CATS.find(c => c.id === "item")));
     persist(guess);
     paint(guess);
-    $("status").textContent = "Instant estimate shown. Tap a category if wrong.";
+    $("status").textContent = "Instant estimate shown. Tap a category or type the name if this is wrong.";
 
     if(getKey()){
-      $("status").textContent = "Asking Gemini for better ID…";
+      $("status").textContent = "Asking Gemini for a better ID…";
       const ai = await askGemini(dataUrl);
       if(ai && ai.name){
-        const item = Object.assign({id:guess.id, image:dataUrl}, {
+        const item = Object.assign({id: guess.id, image: dataUrl}, {
           name: ai.name || guess.name,
           brand: ai.brand || "unknown",
           condition: ai.condition || "Used",
-          low: Number(ai.low)||guess.low,
-          high: Number(ai.high)||guess.high,
-          floor: Number(ai.floor)||guess.floor,
-          notes: Array.isArray(ai.notes)?ai.notes:[String(ai.notes||"Gemini estimate")],
+          low: Number(ai.low) || guess.low,
+          high: Number(ai.high) || guess.high,
+          floor: Number(ai.floor) || guess.floor,
+          notes: Array.isArray(ai.notes) ? ai.notes : [String(ai.notes || "Gemini estimate")],
           search: ai.search || ai.name,
           conf: "Gemini",
           listingTitle: ai.listingTitle || ai.name,
@@ -301,20 +349,23 @@ async function run(file){
         $("status").textContent = "Gemini refined the identification.";
       } else {
         $("status").textContent = "Gemini did not return a usable result. Use the category buttons or type the name.";
-        $("err").textContent = "Check your key or try again. Instant estimate is still usable.";
+        $("err").textContent = "Key may be invalid or rate-limited. Instant estimate is still usable.";
       }
     }
-  } catch(e){
+  } catch(e) {
     $("err").textContent = e.message || String(e);
     $("status").textContent = "Could not process photo.";
+    $("pname").textContent = "Error";
+    $("price").textContent = "—";
   }
-  $("cam").value=""; $("lib").value="";
+  $("cam").value = "";
+  $("lib").value = "";
 }
 
 $("takeBtn").onclick = () => $("cam").click();
 $("upBtn").onclick = () => $("lib").click();
-$("cam").onchange = e => e.target.files?.[0] && run(e.target.files[0]);
-$("lib").onchange = e => e.target.files?.[0] && run(e.target.files[0]);
+$("cam").onchange = e => { const f = e.target.files?.[0]; if(f) run(f); };
+$("lib").onchange = e => { const f = e.target.files?.[0]; if(f) run(f); };
 $("keyPill").onclick = () => show("settings");
 $("saveKey").onclick = () => {
   const k = $("apiKey").value.trim();
@@ -325,15 +376,23 @@ $("saveKey").onclick = () => {
 $("reprice").onclick = () => {
   const t = $("typed").value.trim();
   if(!t || !state.current) return;
-  const next = Object.assign({id:state.current.id, image:state.current.image}, fromCat(CATS.find(c=>c.id==="item"), t));
-  persist(next); paint(next);
+  const next = Object.assign({id: state.current.id, image: state.current.image}, fromCat(CATS.find(c => c.id === "item"), t));
+  persist(next);
+  paint(next);
   $("status").textContent = "Updated from typed name.";
+  $("err").textContent = "";
 };
 $("copyBtn").onclick = async () => {
-  try { await navigator.clipboard.writeText($("ltitle").value + "\n\n" + $("lbody").value); $("copyBtn").textContent="Copied"; setTimeout(()=>$("copyBtn").textContent="Copy",1200); } catch(e){}
+  try {
+    await navigator.clipboard.writeText($("ltitle").value + "\n\n" + $("lbody").value);
+    $("copyBtn").textContent = "Copied";
+    setTimeout(() => $("copyBtn").textContent = "Copy", 1200);
+  } catch(e) {}
 };
 $("shareBtn").onclick = async () => {
-  try { if(navigator.share) await navigator.share({title:$("ltitle").value, text:$("lbody").value}); } catch(e){}
+  try {
+    if(navigator.share) await navigator.share({title: $("ltitle").value, text: $("lbody").value});
+  } catch(e) {}
 };
 document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => show(b.dataset.go)));
 </script>
