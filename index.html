@@ -11,7 +11,7 @@
     :root { --bg:#0f1410; --bg2:#171e18; --card:#1d261f; --ink:#f4efe4; --muted:#b7c0b4; --gold:#d4b36a; --gold2:#f0d59a; --line:rgba(244,239,228,.12); --danger:#e07a6a; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--ink); font-family:Outfit,system-ui,sans-serif; }
-    .app { max-width:480px; margin:0 auto; padding:16px 16px calc(220px + env(safe-area-inset-bottom, 40px)); }
+    .app { max-width:480px; margin:0 auto; padding:16px 16px calc(280px + env(safe-area-inset-bottom, 60px)); }
     header { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; }
     .brand { display:flex; gap:10px; align-items:center; }
     .logo { width:36px; height:36px; border-radius:10px; background:linear-gradient(145deg,#f0d59a,#d4b36a); color:#1a1408; display:grid; place-items:center; font-weight:800; }
@@ -214,18 +214,25 @@ function paint(item){
   $("chips").innerHTML = CATS.filter(c => c.id !== "item").map(c =>
     '<button type="button" data-id="' + c.id + '">' + c.name + '</button>'
   ).join("");
+  // highlight if current matches a category name
   $("chips").querySelectorAll("button").forEach(b => {
-    b.onclick = () => {
-      const cat = CATS.find(c => c.id === b.dataset.id);
-      if(!cat) return;
-      const next = Object.assign({id: item.id, image: item.image}, fromCat(cat));
-      persist(next);
-      paint(next);
-      $("status").textContent = "Updated from category.";
-      $("err").textContent = "";
-    };
+    const cat = CATS.find(c => c.id === b.dataset.id);
+    if(cat && item.name === cat.name) b.classList.add("on");
   });
 }
+
+// Delegated click so taps always work even after re-render
+document.addEventListener("click", function(e){
+  const btn = e.target.closest("#chips button");
+  if(!btn || !state.current) return;
+  const cat = CATS.find(c => c.id === btn.dataset.id);
+  if(!cat) return;
+  const next = Object.assign({id: state.current.id, image: state.current.image}, fromCat(cat));
+  persist(next);
+  paint(next);
+  $("status").textContent = "Updated to " + cat.name + ".";
+  $("err").textContent = "";
+});
 
 function persist(item){
   if(!item || !item.id) return;
