@@ -97,6 +97,18 @@
       <button class="ghost" id="reprice">Update from name</button>
     </div>
     <div class="card">
+      <strong>What it is</strong>
+      <p id="purpose" style="color:var(--muted);margin:6px 0 0;font-size:14px"></p>
+    </div>
+    <div class="card">
+      <strong>Background</strong>
+      <p id="history" style="color:var(--muted);margin:6px 0 0;font-size:14px"></p>
+    </div>
+    <div class="card">
+      <strong>How to use / care</strong>
+      <p id="howto" style="color:var(--muted);margin:6px 0 0;font-size:14px"></p>
+    </div>
+    <div class="card">
       <strong>What affects value</strong>
       <ul id="notes" style="color:var(--muted);margin:8px 0 0;padding-left:18px"></ul>
     </div>
@@ -144,17 +156,61 @@ const KEY = "sw_gemini_key_v2";
 const HIST = "sw_hist_v8";
 
 const CATS = [
-  {id:"mouse", name:"Computer mouse", brand:"Logitech / generic", low:6, high:12, floor:5, notes:["Most used office mice sell $6–12.","Wireless needs receiver."], q:"Logitech mouse used"},
-  {id:"headphones", name:"Headphones / earbuds", brand:"Check logo", low:12, high:28, floor:8, notes:["Typical used range $12–28.","Premium brands higher if working."], q:"used headphones"},
-  {id:"tool", name:"Power or hand tool", brand:"Read the brand", low:25, high:55, floor:15, notes:["Common tools $25–55 used.","Battery packs raise price."], q:"used power tool"},
-  {id:"phone", name:"Smartphone", brand:"Model + storage", low:60, high:180, floor:30, notes:["Depends on model and lock status.","Cracks drop value fast."], q:"used smartphone"},
-  {id:"shoes", name:"Shoes / sneakers", brand:"Brand + size", low:18, high:45, floor:12, notes:["Average used sneakers $18–45.","Popular models higher."], q:"used sneakers"},
-  {id:"furniture", name:"Furniture", brand:"Local pickup", low:40, high:120, floor:20, notes:["Local demand sets price.","Condition is everything."], q:"used furniture"},
-  {id:"jewelry", name:"Jewelry / watch", brand:"Hallmarks", low:10, high:60, floor:5, notes:["Costume vs real metal.","Working watches higher."], q:"used jewelry"},
-  {id:"bottle", name:"Water bottle / tumbler", brand:"Brand on base", low:8, high:18, floor:5, notes:["Generic $8–15.","Yeti/Hydro higher."], q:"used insulated tumbler"},
-  {id:"clothing", name:"Clothing / jacket", brand:"Brand + size", low:10, high:25, floor:6, notes:["Most used clothing $10–25.","Brand raises it."], q:"used clothing"},
-  {id:"electronics", name:"Small electronics", brand:"Model number", low:15, high:40, floor:10, notes:["Working units $15–40.","Parts-only is low."], q:"used electronics"},
-  {id:"item", name:"Household item", brand:"Unknown", low:10, high:25, floor:5, notes:["Tap a category for a tighter range."], q:"used item"}
+  {id:"mouse", name:"Computer mouse", brand:"Logitech / generic", low:6, high:12, floor:5,
+   purpose:"Points and clicks on a computer. Used for navigation, selecting, and basic input.",
+   history:"Mice became standard with graphical interfaces in the 1980s–90s. Optical and wireless versions replaced ball mice.",
+   howto:"Plug in or pair via Bluetooth/receiver. Use on a flat surface. Left click selects, right click opens menus, scroll wheel moves pages.",
+   notes:["Most used office mice sell $6–12.","Wireless needs receiver."], q:"Logitech mouse used"},
+  {id:"headphones", name:"Headphones / earbuds", brand:"Check logo", low:12, high:28, floor:8,
+   purpose:"Personal audio. Over-ear or in-ear speakers for music, calls, or noise isolation.",
+   history:"Headphones date to the early 1900s for radio and telephony. Modern consumer versions exploded with portable music and smartphones.",
+   howto:"Connect via 3.5mm jack, USB, or Bluetooth. Adjust headband/ear tips for fit. Charge wireless models. Clean ear pads regularly.",
+   notes:["Typical used range $12–28.","Premium brands higher if working."], q:"used headphones"},
+  {id:"tool", name:"Power or hand tool", brand:"Read the brand", low:25, high:55, floor:15,
+   purpose:"Cuts, drills, fastens, or shapes materials. Used for repairs, building, and DIY.",
+   history:"Hand tools are ancient. Power tools became common in the 20th century with electricity and cordless battery packs.",
+   howto:"Check battery or cord. Wear eye protection. Use the correct bit or blade. Store dry. Test before use.",
+   notes:["Common tools $25–55 used.","Battery packs raise price."], q:"used power tool"},
+  {id:"phone", name:"Smartphone", brand:"Model + storage", low:60, high:180, floor:30,
+   purpose:"Calls, texts, internet, apps, camera, and navigation in one device.",
+   history:"Smartphones grew from early mobile phones in the 1990s–2000s. Touchscreens and app stores defined the modern era after 2007.",
+   howto:"Charge fully. Check for iCloud/FRP lock. Test screen, camera, and battery. Remove accounts before resale.",
+   notes:["Depends on model and lock status.","Cracks drop value fast."], q:"used smartphone"},
+  {id:"shoes", name:"Shoes / sneakers", brand:"Brand + size", low:18, high:45, floor:12,
+   purpose:"Footwear for walking, running, or style. Protects feet and completes an outfit.",
+   history:"Sneakers evolved from early athletic shoes in the late 1800s–1900s. Brand and model culture grew strongly from the 1980s onward.",
+   howto:"Check size and sole wear. Clean before listing. Include original box if available. Note any damage.",
+   notes:["Average used sneakers $18–45.","Popular models higher."], q:"used sneakers"},
+  {id:"furniture", name:"Furniture", brand:"Local pickup", low:40, high:120, floor:20,
+   purpose:"Functional or decorative pieces for sitting, storage, sleeping, or display.",
+   history:"Furniture styles follow design eras (mid-century, traditional, modern). Condition and local demand matter most for resale.",
+   howto:"Photograph all sides and any damage. Note dimensions. Offer local pickup. Wipe clean before sale.",
+   notes:["Local demand sets price.","Condition is everything."], q:"used furniture"},
+  {id:"jewelry", name:"Jewelry / watch", brand:"Hallmarks", low:10, high:60, floor:5,
+   purpose:"Worn for decoration, status, or timekeeping. Can be costume or precious metal.",
+   history:"Jewelry is ancient. Watches became personal timepieces in the 1500s–1600s and mass-market in the 20th century.",
+   howto:"Look for hallmarks on metal. Test if watch runs. Clean gently. Photograph clasps and any stones clearly.",
+   notes:["Costume vs real metal.","Working watches higher."], q:"used jewelry"},
+  {id:"bottle", name:"Water bottle / tumbler", brand:"Brand on base", low:8, high:18, floor:5,
+   purpose:"Holds and often insulates drinks for travel or daily use.",
+   history:"Insulated bottles and tumblers became popular in the 2000s–2010s with brands focused on keeping drinks cold or hot.",
+   howto:"Check lid seal and insulation. Wash thoroughly. Note dents or missing parts. Test for leaks.",
+   notes:["Generic $8–15.","Yeti/Hydro higher."], q:"used insulated tumbler"},
+  {id:"clothing", name:"Clothing / jacket", brand:"Brand + size", low:10, high:25, floor:6,
+   purpose:"Worn for warmth, protection, or style. Jackets add outer-layer coverage.",
+   history:"Clothing resale grew with thrift and online marketplaces. Brand, size, and condition drive most of the value.",
+   howto:"Check size tag and fabric. Note stains, holes, or fading. Wash or note as-is. Photograph front, back, and tags.",
+   notes:["Most used clothing $10–25.","Brand raises it."], q:"used clothing"},
+  {id:"electronics", name:"Small electronics", brand:"Model number", low:15, high:40, floor:10,
+   purpose:"Performs a specific electronic function (audio, charging, display, control, etc.).",
+   history:"Consumer electronics expanded rapidly from the mid-20th century. Working condition and included accessories set resale price.",
+   howto:"Power on and test main function. Include charger or cables if possible. Note model number. Wipe clean.",
+   notes:["Working units $15–40.","Parts-only is low."], q:"used electronics"},
+  {id:"item", name:"Household item", brand:"Unknown", low:10, high:25, floor:5,
+   purpose:"Everyday object used around the home.",
+   history:"Varies widely. Tap a category or type the name for specific background.",
+   howto:"Photograph clearly. Note condition and any brand marks. Tap a better category for tighter info.",
+   notes:["Tap a category for a tighter range."], q:"used item"}
 ];
 
 const state = { current:null, history:JSON.parse(localStorage.getItem(HIST)||"[]") };
@@ -186,6 +242,9 @@ function fromCat(cat, extraName){
     low: cat.low,
     high: cat.high,
     floor: cat.floor,
+    purpose: cat.purpose || "",
+    history: cat.history || "",
+    howto: cat.howto || "",
     notes: cat.notes.slice(),
     search: extraName || cat.q,
     conf: extraName ? "typed" : "instant",
@@ -204,6 +263,9 @@ function paint(item){
   $("cond").textContent = item.condition || "Used";
   $("conf").textContent = item.conf || "—";
   $("advice").textContent = "Do not list under $" + (item.floor||item.low||5) + " without checking sold comps.";
+  $("purpose").textContent = item.purpose || "—";
+  $("history").textContent = item.history || "—";
+  $("howto").textContent = item.howto || "—";
   $("notes").innerHTML = (item.notes||[]).map(n => "<li>" + n + "</li>").join("");
   $("ltitle").value = item.listingTitle || item.name || "";
   $("lbody").value = item.listingBody || "";
