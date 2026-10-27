@@ -93,7 +93,7 @@
     <div class="card">
       <strong>Wrong? Tap a category or type the real name</strong>
       <div class="chips" id="chips"></div>
-      <input id="typed" placeholder="e.g. Logitech mouse, Craftsman drill, Nike Air Force 1"/>
+      <input id="typed" placeholder="e.g. YETI tumbler, Logitech mouse, Nike shoes"/>
       <button class="ghost" id="reprice">Update from name</button>
     </div>
     <div class="card">
@@ -213,6 +213,33 @@ const CATS = [
    howto:"Photograph clearly. Note condition and any brand marks. Tap a better category for tighter info.",
    notes:["Tap a category for a tighter range."], q:"used item"}
 ];
+
+
+const BRANDS = [
+  {match:["yeti","rambler"], name:"YETI Rambler tumbler", brand:"YETI", low:15, high:30, floor:12,
+   purpose:"Double-wall vacuum insulated tumbler that keeps drinks cold or hot for hours.",
+   history:"YETI launched the Rambler line to bring high-end cooler insulation to everyday drinkware. Strong resale because of durability and brand recognition.",
+   howto:"Hand wash or top-rack dishwasher. Check MagSlider or straw lid seal. Note any dents or missing lid.",
+   notes:["Used YETI Ramblers commonly sell $15–30.","Size, lid type, and condition set the price.","Generic tumblers are much lower."],
+   q:"YETI Rambler tumbler used"},
+  {match:["hydro","hydroflask","hydro flask"], name:"Hydro Flask tumbler / bottle", brand:"Hydro Flask", low:12, high:28, floor:10,
+   purpose:"Insulated stainless drinkware known for temperature retention.",
+   history:"Hydro Flask popularized colorful insulated bottles in the 2010s.",
+   howto:"Wash thoroughly. Check lid and flex cap. Note scratches or dents.",
+   notes:["Used Hydro Flask usually $12–28.","Color and size matter."],
+   q:"Hydro Flask used"},
+  {match:["stanley"], name:"Stanley tumbler", brand:"Stanley", low:10, high:25, floor:8,
+   purpose:"Insulated tumbler, often with handle and straw lid.",
+   history:"Stanley drinkware saw a major resurgence with the Quencher style.",
+   howto:"Check handle and lid. Wash well. Note any chips.",
+   notes:["Used Stanley tumblers often $10–25."],
+   q:"Stanley tumbler used"}
+];
+
+function matchBrand(text){
+  const t = (text || "").toLowerCase();
+  return BRANDS.find(b => b.match.some(m => t.includes(m)));
+}
 
 const state = { current:null, history:JSON.parse(localStorage.getItem(HIST)||"[]") };
 
@@ -483,10 +510,31 @@ $("saveKey").onclick = () => {
 $("reprice").onclick = () => {
   const t = $("typed").value.trim();
   if(!t || !state.current) return;
-  const next = Object.assign({id: state.current.id, image: state.current.image}, fromCat(CATS.find(c => c.id === "item"), t));
+  const brand = matchBrand(t);
+  let next;
+  if(brand){
+    next = Object.assign({id: state.current.id, image: state.current.image}, {
+      name: brand.name,
+      brand: brand.brand,
+      condition: "Used",
+      low: brand.low,
+      high: brand.high,
+      floor: brand.floor,
+      purpose: brand.purpose,
+      history: brand.history,
+      howto: brand.howto,
+      notes: brand.notes.slice(),
+      search: brand.q,
+      conf: "brand match",
+      listingTitle: brand.name + " — used",
+      listingBody: brand.name + "\nCondition: used as shown.\nAsking $" + brand.low + "–$" + brand.high + "."
+    });
+  } else {
+    next = Object.assign({id: state.current.id, image: state.current.image}, fromCat(CATS.find(c => c.id === "item"), t));
+  }
   persist(next);
   paint(next);
-  $("status").textContent = "Updated from typed name.";
+  $("status").textContent = brand ? "Updated to " + brand.brand + "." : "Updated from typed name.";
   $("err").textContent = "";
 };
 $("copyBtn").onclick = async () => {
