@@ -91,10 +91,11 @@
     </div>
     <p id="advice" style="color:var(--gold2);font-size:14px"></p>
     <div class="card">
-      <strong>Wrong? Tap a category or type the real name</strong>
-      <div class="chips" id="chips"></div>
-      <input id="typed" placeholder="e.g. YETI tumbler, Logitech mouse, Nike shoes"/>
+      <strong>Type the brand or product name for a better price and info</strong>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0">Brand matters. Examples: YETI, Hydro Flask, Nike, iPhone, DeWalt, Sony.</p>
+      <input id="typed" placeholder="Type brand or model (e.g. YETI Rambler)"/>
       <button class="ghost" id="reprice">Update from name</button>
+      <div class="chips" id="chips" style="margin-top:12px"></div>
     </div>
     <div class="card">
       <strong>What it is</strong>
@@ -216,24 +217,16 @@ const CATS = [
 
 
 const BRANDS = [
-  {match:["yeti","rambler"], name:"YETI Rambler tumbler", brand:"YETI", low:15, high:30, floor:12,
-   purpose:"Double-wall vacuum insulated tumbler that keeps drinks cold or hot for hours.",
-   history:"YETI launched the Rambler line to bring high-end cooler insulation to everyday drinkware. Strong resale because of durability and brand recognition.",
-   howto:"Hand wash or top-rack dishwasher. Check MagSlider or straw lid seal. Note any dents or missing lid.",
-   notes:["Used YETI Ramblers commonly sell $15–30.","Size, lid type, and condition set the price.","Generic tumblers are much lower."],
-   q:"YETI Rambler tumbler used"},
-  {match:["hydro","hydroflask","hydro flask"], name:"Hydro Flask tumbler / bottle", brand:"Hydro Flask", low:12, high:28, floor:10,
-   purpose:"Insulated stainless drinkware known for temperature retention.",
-   history:"Hydro Flask popularized colorful insulated bottles in the 2010s.",
-   howto:"Wash thoroughly. Check lid and flex cap. Note scratches or dents.",
-   notes:["Used Hydro Flask usually $12–28.","Color and size matter."],
-   q:"Hydro Flask used"},
-  {match:["stanley"], name:"Stanley tumbler", brand:"Stanley", low:10, high:25, floor:8,
-   purpose:"Insulated tumbler, often with handle and straw lid.",
-   history:"Stanley drinkware saw a major resurgence with the Quencher style.",
-   howto:"Check handle and lid. Wash well. Note any chips.",
-   notes:["Used Stanley tumblers often $10–25."],
-   q:"Stanley tumbler used"}
+  {match:["yeti","rambler"], name:"YETI Rambler", brand:"YETI", low:15, high:30, floor:12, purpose:"Double-wall vacuum insulated drinkware.", history:"YETI Rambler brought premium cooler insulation to everyday tumblers and bottles.", howto:"Check lid seal. Hand wash or top rack. Note dents or missing parts.", notes:["Used YETI commonly $15–30.","Size and lid type matter."], q:"YETI Rambler used"},
+  {match:["hydro","hydroflask","hydro flask"], name:"Hydro Flask", brand:"Hydro Flask", low:12, high:28, floor:10, purpose:"Insulated stainless bottle or tumbler.", history:"Hydro Flask popularized colorful insulated drinkware.", howto:"Wash well. Check flex cap or lid.", notes:["Used Hydro Flask usually $12–28."], q:"Hydro Flask used"},
+  {match:["stanley"], name:"Stanley tumbler", brand:"Stanley", low:10, high:25, floor:8, purpose:"Insulated tumbler, often with handle.", history:"Stanley saw a major resurgence with Quencher-style tumblers.", howto:"Check handle and lid. Note chips.", notes:["Used Stanley often $10–25."], q:"Stanley tumbler used"},
+  {match:["apple","iphone","ipad","macbook"], name:"Apple device", brand:"Apple", low:80, high:400, floor:40, purpose:"Smartphone, tablet, or computer.", history:"Apple devices hold value well when unlocked and in good condition.", howto:"Check iCloud lock, battery health, and screen. Remove accounts.", notes:["Lock status kills value.","Model and storage set price."], q:"used iPhone"},
+  {match:["samsung","galaxy"], name:"Samsung Galaxy", brand:"Samsung", low:50, high:250, floor:25, purpose:"Android smartphone or tablet.", history:"Galaxy line is a major resale category.", howto:"Check FRP lock and battery. Test screen.", notes:["Unlocked and working units sell higher."], q:"Samsung Galaxy used"},
+  {match:["nike","air force","jordan"], name:"Nike / Jordan sneakers", brand:"Nike", low:25, high:120, floor:15, purpose:"Athletic or lifestyle footwear.", history:"Nike and Jordan models have strong secondary markets.", howto:"Check size, sole wear, and box. Note authenticity marks.", notes:["Popular models and size drive price."], q:"Nike sneakers used"},
+  {match:["adidas"], name:"Adidas sneakers", brand:"Adidas", low:20, high:80, floor:12, purpose:"Athletic footwear.", history:"Adidas resale is strong on popular models.", howto:"Check size and condition.", notes:["Model and size matter."], q:"Adidas sneakers used"},
+  {match:["dewalt","makita","milwaukee","craftsman"], name:"Power tool", brand:"Pro brand", low:30, high:120, floor:20, purpose:"Cordless or corded tool for building and repair.", history:"Pro tool brands hold value when batteries and chargers are included.", howto:"Test function. Note battery count and condition.", notes:["Battery packs raise price significantly."], q:"DeWalt tool used"},
+  {match:["sony","bose","beats"], name:"Headphones", brand:"Premium audio", low:25, high:90, floor:15, purpose:"Over-ear or in-ear audio.", history:"Sony, Bose, and Beats hold value better than generic brands.", howto:"Test sound, battery, and pads. Include case if possible.", notes:["Working units with case sell higher."], q:"Sony headphones used"},
+  {match:["logitech"], name:"Logitech device", brand:"Logitech", low:8, high:35, floor:5, purpose:"Mouse, keyboard, or webcam.", history:"Logitech office and gaming gear is common in resale.", howto:"Test buttons and connection. Include receiver for wireless.", notes:["Wireless needs the receiver."], q:"Logitech mouse used"}
 ];
 
 function matchBrand(text){
